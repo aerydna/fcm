@@ -1,0 +1,47 @@
+{
+  "resolutionOrder": "byPrintedNumberAscending",
+  "demandCapPerHouse": 3,
+  "demandCapPerHouseWithGarden": 5,
+  "campaignTypes": {
+    "billboard": {
+      "count": 6,
+      "asset": "assets/components/marketing-billboard.png",
+      "placement": "empty square connected to the road used to reach the tile",
+      "reaches": "all houses orthogonally adjacent to the tile (a house counts if only its garden is adjacent)"
+    },
+    "mailbox": {
+      "count": 4,
+      "asset": "assets/components/marketing-mailbox.png",
+      "placement": "empty square adjacent to a road",
+      "reaches": "all houses in the same block (reachable without crossing a road; passes through restaurants/houses)"
+    },
+    "airplane": {
+      "count": 3,
+      "sizes": [1, 3, 5],
+      "asset": "assets/components/marketing-airplane.png",
+      "placement": "on the side of the board; not road-connected; not affected by range; must fly over exactly its size in rows/columns and stay on the board",
+      "reaches": "every house in the fly-over line of 1/3/5 rows or columns (counts if only part of house/garden is in the zone)"
+    },
+    "radio": {
+      "count": 3,
+      "asset": "assets/components/marketing-radio.png",
+      "placement": "empty square adjacent to a road",
+      "reaches": "every house on the radio's tile plus houses on all 8 surrounding tiles"
+    }
+  },
+  "marketeers": {
+    "marketing-trainee": { "types": ["billboard"], "range": 2, "maxDuration": 2 },
+    "campaign-manager":  { "types": ["mailbox", "billboard"], "range": 3, "maxDuration": 3 },
+    "brand-manager":     { "types": ["airplane", "mailbox", "billboard"], "range": null, "rangeUnlimited": true, "maxDuration": 4 },
+    "brand-director":    { "types": ["radio", "airplane", "mailbox", "billboard"], "range": null, "rangeUnlimited": true, "maxDuration": 5 }
+  },
+  "advertise": { "choices": ["burger", "pizza", "softdrink", "beer", "lemonade"] },
+  "busyChip": {
+    "asset": "assets/components/busy-chip.png",
+    "rule": "Placed on a marketeer equal to campaign duration; marketeer takes no slot while busy but may still require salary. After each firing remove one advertising token; when zero, free the marketeer."
+  },
+  "milestoneInteractions": {
+    "firstBillboardPlaced": "That player's campaigns become eternal (never end); marketeer removed for the game; no marketeer salaries.",
+    "firstRadioCampaign": "Radio places 2 demand tokens per reached house instead of 1 (0/1 if nearly full)."
+  }
+}

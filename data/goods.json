@@ -1,0 +1,14 @@
+{
+  "goods": [
+    { "id": "burger",    "category": "food",  "producedBy": ["kitchen-trainee", "burger-cook", "burger-chef"] },
+    { "id": "pizza",     "category": "food",  "producedBy": ["kitchen-trainee", "pizza-cook", "pizza-chef"] },
+    { "id": "softdrink", "category": "drink", "collectedFrom": "drink-source" },
+    { "id": "beer",      "category": "drink", "collectedFrom": "drink-source" },
+    { "id": "lemonade",  "category": "drink", "collectedFrom": "drink-source" }
+  ],
+  "notes": {
+    "wooden pieces": "The same wooden goods are used as inventory, as advertising markers on campaigns, and as demand tokens on houses.",
+    "advertisableTypes": ["burger", "pizza", "softdrink", "beer", "lemonade"],
+    "drinkBonusAppliesToAllDrinks": true
+  }
+}

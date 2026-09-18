@@ -1,0 +1,48 @@
+{
+  "_note": "salary = requires $5 in Payday. Rule applied: entry-level cards and the CEO have no salary; all trained (non-entry) cards do. Linear training sub-tracks (managers, recruiters, trainers, buyers, marketeers, kitchen) are exact from the rulebook. Training sources for specialist cards (local/regional manager, cfo, luxuries/discount manager) follow the card art + the rule 'non-entry employees are trained directly from black managers' — confirm against card faces when finalizing.",
+  "asset_dir": "assets/employees",
+  "employees": [
+    { "id": "ceo", "name": "CEO", "category": "manager", "entry": false, "salary": false, "slots": 3, "alwaysAtWork": true, "recruitActions": 1, "ability": "Always at work. 1 free recruitment action. Slots may change to 2/3/4 via reserve cards after a bank break.", "trainsInto": [] },
+
+    { "id": "waitress", "name": "Waitress", "category": "service", "entry": true, "salary": false, "ability": "Get $3 cash ($5 with 'First waitress played'). Wins ties against a restaurant with fewer waitresses.", "trainsInto": [] },
+    { "id": "new-business-developer", "name": "New Business Developer", "category": "expansion", "entry": true, "salary": false, "ability": "Place a house or garden.", "trainsInto": [] },
+    { "id": "management-trainee", "name": "Management Trainee", "category": "manager", "entry": true, "salary": false, "slots": 2, "ability": "Black manager holding 2 subordinates.", "trainsInto": ["junior-vice-president"] },
+    { "id": "pricing-manager", "name": "Pricing Manager", "category": "pricing", "entry": true, "salary": false, "priceModifier": -1, "mandatory": true, "ability": "Unit price -$1 (mandatory).", "trainsInto": ["luxuries-manager", "discount-manager"] },
+    { "id": "recruiting-girl", "name": "Recruiting Girl", "category": "recruiter", "entry": true, "salary": false, "recruitActions": 1, "ability": "Hire 1 person.", "trainsInto": ["recruiting-manager"] },
+    { "id": "trainer", "name": "Trainer", "category": "trainer", "entry": true, "salary": false, "trainingSlots": 1, "ability": "Train 1 person one step.", "trainsInto": ["coach"] },
+    { "id": "errand-boy", "name": "Errand Boy", "category": "buyer", "entry": true, "salary": false, "range": 0, "drinksPerSource": 1, "ability": "Get 1 drink of any type. ('First errand boy played' -> 2 identical drinks and +1 per source.)", "trainsInto": ["cart-operator"] },
+    { "id": "marketing-trainee", "name": "Marketing Trainee", "category": "marketeer", "entry": true, "salary": false, "campaignTypes": ["billboard"], "range": 2, "maxDuration": 2, "ability": "Place a billboard, max duration 2, range 2.", "trainsInto": ["campaign-manager"] },
+    { "id": "kitchen-trainee", "name": "Kitchen Trainee", "category": "kitchen", "entry": true, "salary": false, "produces": { "burger": 1, "pizza": 1, "chooseOne": true }, "ability": "Produce 1 burger or 1 pizza.", "trainsInto": ["burger-cook", "pizza-cook"] },
+
+    { "id": "junior-vice-president", "name": "Junior Vice President", "category": "manager", "entry": false, "salary": true, "slots": 3, "ability": "Black manager, 3 slots.", "trainsInto": ["vice-president"] },
+    { "id": "vice-president", "name": "Vice President", "category": "manager", "entry": false, "salary": true, "slots": 4, "ability": "Black manager, 4 slots.", "trainsInto": ["senior-vice-president"] },
+    { "id": "senior-vice-president", "name": "Senior Vice President", "category": "manager", "entry": false, "salary": true, "slots": 5, "ability": "Black manager, 5 slots.", "trainsInto": ["executive-vice-president"] },
+    { "id": "executive-vice-president", "name": "Executive Vice President", "category": "manager", "entry": false, "salary": true, "slots": 10, "ability": "Black manager, 10 slots.", "trainsInto": [] },
+
+    { "id": "luxuries-manager", "name": "Luxuries Manager", "category": "pricing", "entry": false, "salary": true, "priceModifier": 10, "mandatory": true, "ability": "Unit price +$10 (mandatory).", "trainsInto": [] },
+    { "id": "discount-manager", "name": "Discount Manager", "category": "pricing", "entry": false, "salary": true, "priceModifier": -3, "mandatory": true, "ability": "Unit price -$3 (mandatory).", "trainsInto": [] },
+
+    { "id": "recruiting-manager", "name": "Recruiting Manager", "category": "recruiter", "entry": false, "salary": true, "recruitActions": 2, "ability": "2x: hire 1 person or $5 less salary. Unused hiring actions become $5 salary discounts (mandatory).", "trainsInto": ["hr-director"] },
+    { "id": "hr-director", "name": "HR Director", "category": "recruiter", "entry": false, "salary": true, "topPosition": true, "recruitActions": 4, "ability": "4x: hire 1 person or $5 less salary. Unused hiring actions become $5 salary discounts (mandatory).", "trainsInto": [] },
+
+    { "id": "coach", "name": "Coach", "category": "trainer", "entry": false, "salary": true, "trainingSlots": 2, "ability": "2 training slots; may train the same person two steps.", "trainsInto": ["guru"] },
+    { "id": "guru", "name": "Guru", "category": "trainer", "entry": false, "salary": true, "topPosition": true, "trainingSlots": 3, "ability": "3 training slots; may train the same person up to three steps.", "trainsInto": [] },
+
+    { "id": "cart-operator", "name": "Cart Operator", "category": "buyer", "entry": false, "salary": true, "range": 2, "drinksPerSource": 2, "ignoreRoads": false, "ability": "Trace a route range 2 over roads; take 2 drinks per drink symbol passed (no U-turns).", "trainsInto": ["truck-driver"] },
+    { "id": "truck-driver", "name": "Truck Driver", "category": "buyer", "entry": false, "salary": true, "range": 3, "drinksPerSource": 3, "ignoreRoads": false, "ability": "Route range 3 over roads; 3 drinks per drink symbol passed.", "trainsInto": ["zeppelin-pilot"] },
+    { "id": "zeppelin-pilot", "name": "Zeppelin Pilot", "category": "buyer", "entry": false, "salary": true, "topPosition": true, "range": 4, "drinksPerSource": 2, "ignoreRoads": true, "ability": "Route range 4 ignoring roads (up to 5 tiles, no tile twice); 2 drinks per drink symbol on flown tiles.", "trainsInto": [] },
+
+    { "id": "campaign-manager", "name": "Campaign Manager", "category": "marketeer", "entry": false, "salary": true, "campaignTypes": ["mailbox", "billboard"], "range": 3, "maxDuration": 3, "ability": "Place a mailbox or billboard, max duration 3, range 3.", "trainsInto": ["brand-manager"] },
+    { "id": "brand-manager", "name": "Brand Manager", "category": "marketeer", "entry": false, "salary": true, "campaignTypes": ["airplane", "mailbox", "billboard"], "rangeUnlimited": true, "maxDuration": 4, "ability": "Place an airplane/mailbox/billboard, max duration 4, unlimited range.", "trainsInto": ["brand-director"] },
+    { "id": "brand-director", "name": "Brand Director", "category": "marketeer", "entry": false, "salary": true, "topPosition": true, "campaignTypes": ["radio", "airplane", "mailbox", "billboard"], "rangeUnlimited": true, "maxDuration": 5, "ability": "Place any campaign type, max duration 5, unlimited range.", "trainsInto": [] },
+
+    { "id": "burger-cook", "name": "Burger Cook", "category": "kitchen", "entry": false, "salary": true, "produces": { "burger": 3 }, "ability": "Produce 3 burgers.", "trainsInto": ["burger-chef"] },
+    { "id": "burger-chef", "name": "Burger Chef", "category": "kitchen", "entry": false, "salary": true, "produces": { "burger": 8 }, "ability": "Produce 8 burgers.", "trainsInto": [] },
+    { "id": "pizza-cook", "name": "Pizza Cook", "category": "kitchen", "entry": false, "salary": true, "produces": { "pizza": 3 }, "ability": "Produce 3 pizzas.", "trainsInto": ["pizza-chef"] },
+    { "id": "pizza-chef", "name": "Pizza Chef", "category": "kitchen", "entry": false, "salary": true, "produces": { "pizza": 8 }, "ability": "Produce 8 pizzas.", "trainsInto": [] },
+
+    { "id": "local-manager", "name": "Local Manager", "category": "restaurant", "entry": false, "salary": true, "ability": "Place a new restaurant (COMING SOON) within range 3 tiles by road from an existing restaurant. Chain gains drive-in while active.", "trainsInto": ["regional-manager"] },
+    { "id": "regional-manager", "name": "Regional Manager", "category": "restaurant", "entry": false, "salary": true, "ability": "Place/move a restaurant anywhere (entrance on a road), active immediately. Chain gains drive-in while active.", "trainsInto": [] },
+    { "id": "cfo", "name": "CFO", "category": "finance", "entry": false, "salary": true, "topPosition": true, "cashBonusPercent": 50, "ability": "+50% to cash earned this round (rounded up).", "trainsInto": [] }
+  ]
+}

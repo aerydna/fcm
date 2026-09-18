@@ -1,0 +1,24 @@
+{
+  "_note": "18 distinct milestones. 'flags' are suggested boolean/numeric modifiers to set on player state. In Phase 7, every milestone claimed at least once this turn is removed from the game for everyone else.",
+  "asset_dir": "assets/milestones",
+  "milestones": [
+    { "id": "first-billboard-placed", "name": "First billboard placed", "trigger": "place a billboard campaign", "effect": "No marketeer salaries; your campaigns become eternal (marketeer removed for the game).", "flags": { "noMarketeerSalary": true, "eternalCampaigns": true } },
+    { "id": "first-to-train-someone", "name": "First to train someone", "trigger": "train an employee to a higher level", "effect": "$15 salary discount each Payday (min $0, mandatory).", "flags": { "salaryDiscount": 15 } },
+    { "id": "first-to-hire-3-in-turn", "name": "First to hire three people in one turn", "trigger": "hire 3+ people in one turn", "effect": "Immediately gain 2 Management Trainee cards on the beach.", "flags": { "grantCards": { "management-trainee": 2 } } },
+    { "id": "first-burger-marketed", "name": "First burger marketed", "trigger": "place a campaign advertising burgers", "effect": "+$5 per burger sold (bonus, not unit price; not doubled by gardens; boosted by CFO).", "flags": { "burgerBonus": 5 } },
+    { "id": "first-pizza-marketed", "name": "First pizza marketed", "trigger": "place a campaign advertising pizza", "effect": "+$5 per pizza sold (bonus only).", "flags": { "pizzaBonus": 5 } },
+    { "id": "first-drink-marketed", "name": "First drink marketed", "trigger": "place a campaign advertising any drink", "effect": "+$5 per drink sold, all drink types.", "flags": { "drinkBonus": 5 } },
+    { "id": "first-errand-boy-played", "name": "First errand boy played", "trigger": "play an errand boy in your structure", "effect": "Buyers +1 drink per source; errand boys bring 2 identical drinks.", "flags": { "buyerExtraDrinkPerSource": 1, "errandBoyDoubleDrink": true } },
+    { "id": "first-to-have-20", "name": "First to have $20", "trigger": "have $20 cash at any time (after income, before salaries)", "effect": "May look at face-down reserve cards (may bluff, may not show).", "flags": { "canSeeReserveCards": true } },
+    { "id": "first-burger-produced", "name": "First burger produced", "trigger": "produce a burger", "effect": "Immediately receive a Burger Cook card (cannot train it this turn).", "flags": { "grantCards": { "burger-cook": 1 } } },
+    { "id": "first-pizza-produced", "name": "First pizza produced", "trigger": "produce a pizza", "effect": "Immediately receive a Pizza Cook card (cannot train it this turn).", "flags": { "grantCards": { "pizza-cook": 1 } } },
+    { "id": "first-waitress-played", "name": "First waitress played", "trigger": "play a waitress in your structure", "effect": "Each waitress earns $5 instead of $3.", "flags": { "waitressPay": 5 } },
+    { "id": "first-cart-operator-played", "name": "First cart operator played", "trigger": "place your first cart operator", "effect": "Cart operators/truck drivers/zeppelin pilots +1 range (immediate).", "flags": { "buyerRange": 1 } },
+    { "id": "first-airplane-campaign", "name": "First airplane campaign", "trigger": "place an airplane campaign", "effect": "When determining order of play, count +2 open slots.", "flags": { "orderOfPlayBonusSlots": 2 } },
+    { "id": "first-to-lower-prices", "name": "First to lower prices", "trigger": "play a pricing manager or discount manager", "effect": "Prices permanently -$1 (immediate).", "flags": { "priceModifier": -1 } },
+    { "id": "first-to-have-100", "name": "First to have $100", "trigger": "have >=$100 cash at the end of Phase 4", "effect": "CEO also acts as CFO (+50% cash at end of Phase 4). Fire any CFO in Phase 5; may not train a CFO after. Effective next turn.", "flags": { "ceoIsCfo": true, "effectiveNextTurn": true } },
+    { "id": "first-radio-campaign", "name": "First radio campaign", "trigger": "place a radio campaign", "effect": "Radio places 2 goods per reached house in Phase 6 (0/1 if nearly full). Immediate.", "flags": { "radioDoublePlacement": true } },
+    { "id": "first-to-throw-away-food-drink", "name": "First to throw away drink/food", "trigger": "throw away 1+ food/drink token in Phase 7", "effect": "Card becomes a freezer: store up to 10 tokens across turns (not usable the turn gained).", "flags": { "freezerCapacity": 10 } },
+    { "id": "first-to-pay-20-salaries", "name": "First to pay $20 or more in salaries", "trigger": "actually pay >=$20 in salaries in Phase 5 (discounts don't count; all discounts must be used first)", "effect": "May use multiple trainers/coaches/gurus on the same person.", "flags": { "multiTrainSamePerson": true } }
+  ]
+}

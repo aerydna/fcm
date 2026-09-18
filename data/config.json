@@ -1,0 +1,62 @@
+{
+  "game": "Food Chain Magnate",
+  "source": "Splotter Spellen rulebook r175914.pdf (3rd printing, 2015)",
+  "players": { "min": 2, "max": 5 },
+  "unitPriceBase": 10,
+  "salaryPerCard": 5,
+  "houseDemandCap": 3,
+  "houseDemandCapWithGarden": 5,
+  "gardenDoublesUnitPrice": true,
+  "waitressPayBase": 3,
+  "waitressPayWithMilestone": 5,
+  "cfoBonusPercent": 50,
+  "cfoRounding": "up",
+  "freezerCapacity": 10,
+  "bank": {
+    "perPlayer": 50,
+    "perPlayerIntro": 75,
+    "breaksToEndGame": 2
+  },
+  "perPlayerCount": {
+    "2": { "employeeCopiesUsed": 1, "billboardsRemoved": [12, 15, 16], "mapTiles": 9,  "mapSize": "3x3" },
+    "3": { "employeeCopiesUsed": 1, "billboardsRemoved": [15, 16],     "mapTiles": 12, "mapSize": "3x4" },
+    "4": { "employeeCopiesUsed": 2, "billboardsRemoved": [16],         "mapTiles": 16, "mapSize": "4x4" },
+    "5": { "employeeCopiesUsed": 3, "billboardsRemoved": [],           "mapTiles": 20, "mapSize": "5x4" }
+  },
+  "bankReserveCards": {
+    "perPlayer": 3,
+    "chooseAtSetup": 1,
+    "note": "Each card shows a money value and a CEO slot count of 2, 3, or 4. The most common slot count among opened cards (ties: higher) sets all CEOs' slots from the next turn after the 1st bank break."
+  },
+  "ceoSlots": { "default": 3, "possibleAfterBreak": [2, 3, 4] },
+  "introVariant": {
+    "useReserveCards": false,
+    "bankPerPlayer": 75,
+    "useMilestones": false,
+    "skipPayday": true,
+    "endOnFirstBreak": true
+  },
+  "unitPriceModifiers": {
+    "pricingManager": -1,
+    "discountManager": -3,
+    "luxuriesManager": 10,
+    "firstToLowerPricesMilestone": -1
+  },
+  "turnPhases": [
+    "restructuring",
+    "order-of-business",
+    "working",
+    "dinnertime",
+    "payday",
+    "marketing-campaigns",
+    "clean-up"
+  ],
+  "workingActionOrder": [
+    "recruit",
+    "train",
+    "initiate-marketing",
+    "get-food-and-drinks",
+    "place-houses-and-gardens",
+    "place-or-move-restaurants"
+  ]
+}

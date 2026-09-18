@@ -1,0 +1,23 @@
+{
+  "chains": [
+    { "id": "fried-geese-donkey", "name": "Fried Geese & Donkey", "logo": "assets/components/chain-logo-fried-geese-donkey.png", "restaurantWelcome": "assets/components/restaurant-fried-geese-donkey-welcome.png" },
+    { "id": "golden-duck-diner",  "name": "Golden Duck Diner",     "logo": "assets/components/chain-logo-golden-duck-diner.png",  "restaurantWelcome": "assets/components/restaurant-golden-duck-diner-welcome.png" },
+    { "id": "santa-maria-pizza",  "name": "Santa Maria pizza",     "logo": "assets/components/chain-logo-santa-maria-pizza.png",  "restaurantWelcome": "assets/components/restaurant-santa-maria-pizza-welcome.png" },
+    { "id": "xango-blues-bar",    "name": "Xango Blues Bar",       "logo": "assets/components/chain-logo-xango-blues-bar.png",    "restaurantWelcome": "assets/components/restaurant-xango-blues-bar-welcome.png" },
+    { "id": "gluttony-burgers",   "name": "Gluttony Inc. Burgers", "logo": "assets/components/chain-logo-gluttony-burgers.png",   "restaurantWelcome": "assets/components/restaurant-gluttony-burgers-welcome.png" }
+  ],
+  "restaurantsPerPlayer": 3,
+  "restaurantSides": ["coming-soon", "welcome"],
+  "placement": {
+    "initial": {
+      "fullyOnEmptySquares": true,
+      "entranceAdjacentToRoad": true,
+      "entranceNotSameTileAsExistingEntrance": true
+    },
+    "duringGame": {
+      "fullyOnEmptySquares": true,
+      "entranceAdjacentToRoad": true,
+      "entranceMayShareTileWithExistingEntrance": true
+    }
+  }
+}

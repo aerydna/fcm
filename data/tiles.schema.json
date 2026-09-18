@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Food Chain Magnate map tile",
+  "description": "Intended shape for the 20 map tiles (supplied separately). A tile is a 3x3 grid of square cells. Roads are modeled on cell edges so connectivity and tile-border crossings (range) can be computed. Place a tile into the map grid with a rotation of 0/90/180/270 degrees.",
+  "type": "object",
+  "required": ["id", "grid"],
+  "properties": {
+    "id": { "type": "string", "description": "Unique tile id, e.g. 'tile-01'." },
+    "image": { "type": "string", "description": "Optional path to the tile artwork." },
+    "grid": {
+      "type": "array",
+      "description": "3 rows x 3 columns of cells, row-major, before rotation.",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "array",
+        "minItems": 3,
+        "maxItems": 3,
+        "items": { "$ref": "#/definitions/cell" }
+      }
+    }
+  },
+  "definitions": {
+    "cell": {
+      "type": "object",
+      "properties": {
+        "road": {
+          "type": "object",
+          "description": "Which edges of this cell carry a road segment. Roads on shared edges connect adjacent cells and tiles.",
+          "properties": {
+            "n": { "type": "boolean" },
+            "e": { "type": "boolean" },
+            "s": { "type": "boolean" },
+            "w": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        },
+        "drinkSource": {
+          "type": ["string", "null"],
+          "enum": ["softdrink", "beer", "lemonade", null],
+          "description": "A drink symbol printed on this cell (buyers collect from an orthogonally adjacent road cell)."
+        },
+        "house": {
+          "type": ["object", "null"],
+          "description": "A printed house occupying this cell (houses can span cells; model per your renderer).",
+          "properties": {
+            "number": { "type": "integer", "description": "House number; determines Dinnertime processing order." },
+            "hasGarden": { "type": "boolean", "default": false }
+          }
+        },
+        "occupiable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether restaurants/marketing/new houses may be placed here (false if a printed house/road/drink already occupies it)."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "example": {
+    "id": "tile-01",
+    "image": "assets/tiles/tile-01.png",
+    "grid": [
+      [ { "occupiable": true }, { "road": { "n": true, "s": true } }, { "occupiable": true } ],
+      [ { "road": { "e": true, "w": true } }, { "road": { "n": true, "e": true, "s": true, "w": true } }, { "road": { "e": true, "w": true } } ],
+      [ { "house": { "number": 12, "hasGarden": false }, "occupiable": false }, { "road": { "n": true, "s": true } }, { "drinkSource": "beer", "occupiable": false } ]
+    ]
+  }
+}
