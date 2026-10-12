@@ -1,0 +1,38 @@
+{
+  "source": "Transcribed from boardgamehelpers.com tile scans (reference/tiles), base game, rotation 0.",
+  "size": 5,
+  "legend": {
+    ".": "empty",
+    "#": "road",
+    "H": "printed house (see houses[])",
+    "s": "softdrink source",
+    "b": "beer source",
+    "l": "lemonade source"
+  },
+  "roadRules": {
+    "intraTile": "Road squares connect to orthogonally adjacent road squares on the same tile.",
+    "interTile": "Roads cross a tile border only through the middle square of an edge (index 2), when both facing squares are road."
+  },
+  "tiles": [
+    { "id": "A", "rows": ["..#..", "..#..", "#####", "HH#..", "HH#.."], "houses": [{ "number": 2, "x": 0, "y": 3 }] },
+    { "id": "B", "rows": ["..#HH", "..#HH", "#####", "..#..", "..#.."], "houses": [{ "number": 4, "x": 3, "y": 0 }] },
+    { "id": "C", "rows": ["#####", "#.HH#", "#.HH#", "#...#", "#####"], "houses": [{ "number": 5, "x": 2, "y": 1 }] },
+    { "id": "D", "rows": ["#####", "#HH.#", "#HH.#", ".....", "....."], "houses": [{ "number": 7, "x": 1, "y": 1 }] },
+    { "id": "E", "rows": ["###..", "#b...", "#.HH#", "..HH#", "..###"], "houses": [{ "number": 8, "x": 2, "y": 2 }] },
+    { "id": "F", "rows": ["HH#..", "HH#..", "#####", ".....", "....."], "houses": [{ "number": 10, "x": 0, "y": 0 }] },
+    { "id": "G", "rows": ["HH#..", "HH#..", "#####", "..#..", "..#.."], "houses": [{ "number": 12, "x": 0, "y": 0 }] },
+    { "id": "H", "rows": ["..#..", "..#..", "#####", ".HH..", ".HH.."], "houses": [{ "number": 13, "x": 1, "y": 3 }] },
+    { "id": "I", "rows": ["..#..", "..#..", "#####", "...HH", "...HH"], "houses": [{ "number": 15, "x": 3, "y": 3 }] },
+    { "id": "J", "rows": ["..###", ".HH.#", "#HH.#", "#....", "###.."], "houses": [{ "number": 16, "x": 1, "y": 1 }] },
+    { "id": "K", "rows": ["#####", "#.HH#", "#.HH#", ".....", "....."], "houses": [{ "number": 18, "x": 2, "y": 1 }] },
+    { "id": "L", "rows": ["..#..", "..#..", "#####", "...l.", "....."], "houses": [] },
+    { "id": "M", "rows": ["..###", "...l#", "#...#", "#s...", "###.."], "houses": [] },
+    { "id": "N", "rows": ["..#..", ".b#..", "#####", ".....", "....."], "houses": [] },
+    { "id": "O", "rows": [".b#..", "..#..", "#####", "..#..", "..#.."], "houses": [] },
+    { "id": "P", "rows": ["..#..", "l.#..", "#####", "..#..", "..#b."], "houses": [] },
+    { "id": "Q", "rows": ["..#..", "..#..", "#####", ".s...", "....."], "houses": [] },
+    { "id": "R", "rows": ["..#..", ".s#..", "#####", "..#..", "..#.."], "houses": [] },
+    { "id": "S", "rows": ["..#s.", "..#..", "#####", "b.#..", "..#.."], "houses": [] },
+    { "id": "T", "rows": ["..#..", ".l#..", "#####", "..#..", "..#.."], "houses": [] }
+  ]
+}

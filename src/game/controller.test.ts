@@ -1,0 +1,18 @@
+import { expect, it } from 'vitest';
+import { chooseEasy } from '../ai/easy';
+import { visibleState } from '../engine/game';
+import { GameController, type Note } from './controller';
+
+it('production notes report what was collected', async () => {
+  const c = new GameController(11, ['golden-duck-diner', 'santa-maria-pizza', 'xango-blues-bar'], 'easy');
+  const notes: Note[] = [];
+  c.subscribe((_e, _s, n) => notes.push(...n));
+  const internal = c as unknown as { state: import('../engine/types').GameState; commit: (p: number, a: unknown) => void };
+  for (let i = 0; i < 3000 && internal.state.round < 6; i++) {
+    const me = internal.state.active!;
+    internal.commit(me, chooseEasy(visibleState(internal.state, me), me));
+  }
+  const prod = notes.filter((n) => n.kind === 'production');
+  console.log(prod.slice(0, 12));
+  expect(prod.some((n) => n.title === 'nothing collected')).toBe(false);
+});

@@ -6,6 +6,7 @@
   "salaryPerCard": 5,
   "houseDemandCap": 3,
   "houseDemandCapWithGarden": 5,
+  "newHouseNumbers": { "numbers": [1, 3, 6, 9, 11, 14, 17, 19], "note": "Numbers not printed on map tiles A-K; 8 house tiles.", "toVerify": true },
   "gardenDoublesUnitPrice": true,
   "waitressPayBase": 3,
   "waitressPayWithMilestone": 5,
@@ -26,6 +27,11 @@
   "bankReserveCards": {
     "perPlayer": 3,
     "chooseAtSetup": 1,
+    "cards": [
+      { "money": 100, "ceoSlots": 2 },
+      { "money": 200, "ceoSlots": 3 },
+      { "money": 300, "ceoSlots": 4 }
+    ],
     "note": "Each card shows a money value and a CEO slot count of 2, 3, or 4. The most common slot count among opened cards (ties: higher) sets all CEOs' slots from the next turn after the 1st bank break."
   },
   "ceoSlots": { "default": 3, "possibleAfterBreak": [2, 3, 4] },
