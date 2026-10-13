@@ -4,7 +4,7 @@ import gsap from 'gsap';
 import { type GameMap, roadLinks, squareAt, TILE_SIZE } from '../engine/map';
 import { seededRandom } from '../engine/rng';
 import { GOOD_ICON } from '../ui/icons';
-import { entranceSquares, hasDriveIn } from '../engine/geometry';
+import { adjacentRoads, entranceSquares, hasDriveIn, houseSquares } from '../engine/geometry';
 import type { Campaign, GameEvent, GameState, HouseState, Rect, Restaurant } from '../engine/types';
 import { type AssetKey, loadAssets, makeGlowTexture } from './assets';
 import { Camera } from './Camera';
@@ -38,6 +38,8 @@ export interface Target {
   id: number;
   rects: Rect[];
   marks?: (readonly [number, number])[];
+  /** Squares to emphasize while previewing (e.g. houses a campaign reaches). */
+  highlights?: Rect[];
 }
 
 const emoji = (text: string, size: number) =>
@@ -61,6 +63,14 @@ export class BoardView {
   private readonly dynamic = new Container();
   private readonly dynLights = new Container();
   private readonly fx = new Container();
+  private readonly bubbles = new Container();
+  private readonly diners = new Container();
+  private state?: GameState;
+  private map?: GameMap;
+  private readonly carAnims: gsap.core.Animation[] = [];
+  private readonly beams: Sprite[] = [];
+  /** Called with the hovered square and its screen position (null when leaving the board). */
+  onHover: ((sq: { x: number; y: number; sx: number; sy: number } | null) => void) | null = null;
   private readonly targetsG = new Graphics();
   private readonly previewG = new Graphics();
   private readonly glow: Texture;
@@ -82,10 +92,11 @@ export class BoardView {
   ) {
     this.glow = makeGlowTexture();
     this.cars.filters = [new DropShadowFilter({ offset: { x: 2, y: 3 }, blur: 1, alpha: 0.4, color: 0x101010 })];
+    this.diners.filters = [new DropShadowFilter({ offset: { x: 2, y: 3 }, blur: 1, alpha: 0.4, color: 0x101010 })];
     this.dynamic.filters = [new DropShadowFilter({ offset: { x: 3, y: 4 }, blur: 1.5, alpha: 0.35, color: 0x101010 })];
     this.lights.blendMode = 'add';
     this.lights.addChild(this.dynLights);
-    this.world.addChild(this.ground, this.roads, this.cars, this.objects, this.dynamic, this.clouds, this.overlay, this.lights, this.labels, this.targetsG, this.previewG, this.fx);
+    this.world.addChild(this.ground, this.roads, this.cars, this.objects, this.dynamic, this.diners, this.clouds, this.overlay, this.lights, this.labels, this.bubbles, this.targetsG, this.previewG, this.fx);
     app.stage.addChild(this.world);
     this.camera = new Camera(app, this.world);
     this.bindPointer(app);
@@ -106,9 +117,12 @@ export class BoardView {
 
   setMap(map: GameMap): void {
     this.anims.splice(0).forEach((a) => a.kill());
-    for (const layer of [this.cars, this.objects, this.clouds, this.labels, this.dynamic, this.dynLights, this.fx]) {
+    for (const layer of [this.cars, this.objects, this.clouds, this.labels, this.dynamic, this.dynLights, this.fx, this.bubbles, this.diners]) {
       layer.removeChildren().forEach((c) => c.destroy());
     }
+    this.carAnims.splice(0).forEach((a) => a.kill());
+    this.map = map;
+    this.state = undefined;
     this.lights.removeChildren().forEach((c) => c !== this.dynLights && c.destroy());
     this.lights.addChild(this.dynLights);
     this.setTargets(null);
@@ -116,7 +130,6 @@ export class BoardView {
     this.drawRoads(map);
     this.drawHouses(map);
     this.drawDrinks(map);
-    this.spawnCars(map, 9);
     this.spawnClouds(map);
     this.overlay.clear().rect(-20000, -20000, 40000 + map.width * CELL, 40000 + map.height * CELL).fill(0xffffff);
     this.camera.setBounds(map.width * CELL, map.height * CELL);
@@ -143,9 +156,13 @@ export class BoardView {
     });
   }
 
-  /** Menu: slow cinematic drift. Game: free pan/zoom. */
+  /** Menu: slow cinematic drift with traffic. Game: free pan/zoom, cars only at Dinnertime. */
   setMode(mode: 'menu' | 'game'): void {
     this.camera.setMode(mode);
+    this.carAnims.splice(0).forEach((a) => a.kill());
+    this.cars.removeChildren().forEach((c) => c.destroy({ children: true }));
+    for (const beam of this.beams.splice(0)) beam.destroy();
+    if (mode === 'menu' && this.map) this.spawnCars(this.map, 9);
   }
 
   async setPlayers(styles: PlayerStyle[]): Promise<void> {
@@ -169,7 +186,9 @@ export class BoardView {
     }
     for (const c of state.campaigns) this.drawCampaign(state, c, bodies, top);
     for (const r of state.restaurants) this.drawRestaurant(r, hasDriveIn(state, r.owner), bodies);
-    for (const h of state.houses) this.drawDemand(h, top);
+    this.bubbles.removeChildren().forEach((c) => c.destroy({ children: true }));
+    for (const h of state.houses) this.drawDemand(h, this.bubbles);
+    this.state = state;
   }
 
   private drawGarden(g: Rect, layer: Container): void {
@@ -254,37 +273,173 @@ export class BoardView {
   }
 
   private drawDemand(h: HouseState, layer: Container): void {
+    if (!h.demand.length) return;
+    const n = h.demand.length;
+    const w = 16 + n * 24;
+    const cx = h.x * CELL + CELL;
+    const y0 = h.y * CELL - 30;
+    const cap = h.garden ? 5 : 3;
+    const bubble = new Container();
+    bubble.addChild(
+      new Graphics()
+        .roundRect(cx - w / 2, y0, w, 34, 14)
+        .fill(0xffffff)
+        .stroke({ color: INK, width: 2.5 })
+        .moveTo(cx - 7, y0 + 33)
+        .lineTo(cx, y0 + 46)
+        .lineTo(cx + 7, y0 + 33)
+        .fill(0xffffff)
+        .stroke({ color: INK, width: 2.5 }),
+    );
     h.demand.forEach((good, i) => {
-      const x = h.x * CELL + 16 + i * 22;
-      const y = h.y * CELL + CELL * 2 - 14;
-      layer.addChild(new Graphics().circle(x, y, 11).fill(0xffffff).stroke({ color: INK, width: 2 }));
-      const icon = emoji(GOOD_ICON[good], 14);
-      icon.position.set(x, y);
-      layer.addChild(icon);
+      const icon = emoji(GOOD_ICON[good], 18);
+      icon.position.set(cx - w / 2 + 20 + i * 24, y0 + 17);
+      bubble.addChild(icon);
     });
+    if (n >= cap) {
+      const full = new Text({ text: 'FULL', style: { fontFamily: 'Fredoka', fontWeight: '700', fontSize: 10, fill: 0xffffff }, resolution: 2, anchor: 0.5 });
+      full.position.set(cx + w / 2 - 2, y0);
+      bubble.addChild(new Graphics().roundRect(cx + w / 2 - 18, y0 - 7, 32, 14, 7).fill(0xe63946), full);
+    }
+    layer.addChild(bubble);
   }
 
-  /** Floating feedback for Dinnertime income and new demand. */
+  /** Floating feedback for new demand from campaigns. */
   animateEvents(events: readonly GameEvent[]): void {
     let delay = 0;
     for (const e of events) {
-      if (e.type !== 'served' && e.type !== 'demand') continue;
+      if (e.type !== 'demand') continue;
       const spot = this.houseSpots.get(e.house);
       if (!spot) continue;
-      const text =
-        e.type === 'served'
-          ? new Text({ text: `+$${e.income}`, style: { fontFamily: 'Fredoka', fontWeight: '700', fontSize: 30, fill: this.styles[e.player]?.color ?? 0xffffff, stroke: { color: 0xffffff, width: 6 } }, resolution: 2, anchor: 0.5 })
-          : emoji(GOOD_ICON[e.good], 30);
+      const text = emoji(GOOD_ICON[e.good], 34);
       text.position.set(spot.x * CELL + CELL, spot.y * CELL + CELL);
       text.alpha = 0;
       this.fx.addChild(text);
       gsap
         .timeline({ delay, onComplete: () => text.destroy() })
-        .to(text, { alpha: 1, duration: 0.2 })
-        .to(text, { y: text.y - 60, duration: 1.4, ease: 'power2.out' }, 0)
-        .to(text, { alpha: 0, duration: 0.4 }, 1.1);
-      delay += e.type === 'served' ? 0.35 : 0.12;
+        .to(text, { alpha: 1, duration: 0.3 })
+        .to(text, { y: text.y - 70, duration: 2.6, ease: 'power2.out' }, 0)
+        .to(text, { alpha: 0, duration: 0.6 }, 2.2);
+      delay += 0.3;
     }
+  }
+
+  /** One car per served house drives from the house to the chain's restaurant. Returns duration in ms. */
+  animateDinner(events: readonly GameEvent[]): number {
+    const state = this.state;
+    if (!state) return 0;
+    let end = 0;
+    let index = 0;
+    events.forEach((e) => {
+      if (e.type !== 'served') return;
+      const house = state.houses.find((h) => h.number === e.house);
+      const path = house && this.dinnerPath(state, house, e.player);
+      if (!path) return;
+      const delay = 0.8 * index++;
+      const ms = this.driveDiner(path, this.styles[e.player]?.color ?? 0xffffff, delay, e.income, e.goods.map((g) => GOOD_ICON[g]).join(''));
+      end = Math.max(end, delay * 1000 + ms);
+    });
+    return end;
+  }
+
+  private dinnerPath(state: GameState, house: HouseState, player: number): [number, number][] | null {
+    const { map } = state;
+    const driveIn = hasDriveIn(state, player);
+    const goals = new Map<number, [number, number]>();
+    for (const r of state.restaurants.filter((x) => x.owner === player && !x.comingSoon)) {
+      for (const [s, road] of adjacentRoads(map, entranceSquares(r, driveIn))) goals.set(road[1] * map.width + road[0], [s[0], s[1]]);
+    }
+    const prev = new Map<number, number>();
+    const queue: number[] = [];
+    const starts = new Map<number, [number, number]>();
+    for (const [s, road] of adjacentRoads(map, houseSquares(house))) {
+      const i = road[1] * map.width + road[0];
+      if (!prev.has(i)) {
+        prev.set(i, -1);
+        starts.set(i, [s[0], s[1]]);
+        queue.push(i);
+      }
+    }
+    for (let q = 0; q < queue.length; q++) {
+      const i = queue[q];
+      if (goals.has(i)) {
+        const roads: [number, number][] = [];
+        for (let k = i; k !== -1; k = prev.get(k)!) roads.unshift([k % map.width, Math.floor(k / map.width)]);
+        return [starts.get(roads[0][1] * map.width + roads[0][0])!, ...roads, goals.get(i)!];
+      }
+      for (const [nx, ny] of roadLinks(map, i % map.width, Math.floor(i / map.width))) {
+        const j = ny * map.width + nx;
+        if (!prev.has(j)) {
+          prev.set(j, i);
+          queue.push(j);
+        }
+      }
+    }
+    return null;
+  }
+
+  private driveDiner(path: [number, number][], color: number, delay: number, income: number, order: string): number {
+    const car = this.makeCar(color);
+    const center = ([x, y]: [number, number]) => ({ x: x * CELL + CELL / 2, y: y * CELL + CELL / 2 });
+    car.position.copyFrom(center(path[0]));
+    car.alpha = 0;
+    car.scale.set(1.3);
+    const tag = emoji(order, 14);
+    tag.position.set(0, -20);
+    car.addChild(tag);
+    this.diners.addChild(car);
+    const step = 0.22;
+    const tl = gsap.timeline({ delay });
+    tl.to(car, { alpha: 1, duration: 0.2 });
+    for (let k = 1; k < path.length; k++) {
+      const a = center(path[k - 1]);
+      const b = center(path[k]);
+      const angle = Math.atan2(b.y - a.y, b.x - a.x);
+      tl.to(car, { rotation: angle, duration: 0.06 }, '>').to(car, { x: b.x, y: b.y, duration: step, ease: 'none' }, '<');
+    }
+    tl.add(() => {
+      tag.visible = false;
+      const coin = new Text({ text: `+$${income}`, style: { fontFamily: 'Fredoka', fontWeight: '700', fontSize: 30, fill: color, stroke: { color: 0xffffff, width: 6 } }, resolution: 2, anchor: 0.5 });
+      coin.position.set(car.x, car.y - 20);
+      this.fx.addChild(coin);
+      gsap.timeline({ onComplete: () => coin.destroy() }).from(coin, { scale: 0.3, duration: 0.3, ease: 'back.out(3)' }).to(coin, { y: coin.y - 60, alpha: 0, duration: 1.6, ease: 'power2.in' }, 1.2);
+    });
+    tl.to(car, { alpha: 0, duration: 0.5 }, '+=1.2').add(() => car.destroy({ children: true }));
+    return (0.2 + (path.length - 1) * (step + 0.06) + 1.9) * 1000;
+  }
+
+  private makeCar(color: number): Container {
+    const car = new Container();
+    car.addChild(
+      new Graphics()
+        .roundRect(-13, -8, 26, 16, 6).fill(color).stroke({ color: 0x2b2d42, width: 2 })
+        .roundRect(-4, -6, 11, 12, 3).fill(0xfffaf0).stroke({ color: 0x2b2d42, width: 1.5 })
+        .rect(5, -5, 3, 10).fill(0x9ad4ea),
+    );
+    return car;
+  }
+
+  /** Pulsing outline on an area (e.g. a rival's new campaign or restaurant). */
+  flashRect(r: Rect, color: string, label: string): void {
+    const c = parseInt(color.slice(1), 16);
+    const box = new Container();
+    box.addChild(
+      new Graphics()
+        .roundRect(r.x * CELL - 6, r.y * CELL - 6, r.w * CELL + 12, r.h * CELL + 12, 16)
+        .fill({ color: c, alpha: 0.18 })
+        .stroke({ color: c, width: 8 })
+        .roundRect(r.x * CELL - 6, r.y * CELL - 6, r.w * CELL + 12, r.h * CELL + 12, 16)
+        .stroke({ color: 0xffffff, width: 2 }),
+    );
+    const tag = new Text({ text: label, style: { fontFamily: 'Fredoka', fontWeight: '700', fontSize: 22, fill: 0xffffff, stroke: { color: c, width: 7 } }, resolution: 2, anchor: { x: 0.5, y: 1 } });
+    tag.position.set((r.x + r.w / 2) * CELL, r.y * CELL - 10);
+    box.addChild(tag);
+    this.fx.addChild(box);
+    gsap
+      .timeline({ onComplete: () => box.destroy({ children: true }) })
+      .from(box, { alpha: 0, duration: 0.25 })
+      .to(box, { alpha: 0.35, duration: 0.45, yoyo: true, repeat: 5, ease: 'sine.inOut' })
+      .to(box, { alpha: 0, duration: 0.6 });
   }
 
   /** Shows placement options; hover previews, R / right-click cycles options on the same anchor, click picks. */
@@ -317,12 +472,21 @@ export class BoardView {
 
   private drawPreview(): void {
     const g = this.previewG.clear();
+    g.removeChildren().forEach((c) => c.destroy());
     const t = this.current();
     if (!t) return;
     for (const r of t.rects) {
       g.roundRect(r.x * CELL + 3, r.y * CELL + 3, r.w * CELL - 6, r.h * CELL - 6, 10).fill({ color: this.previewColor, alpha: 0.45 }).stroke({ color: INK, width: 3 });
     }
     for (const [x, y] of t.marks ?? []) g.circle(x * CELL + CELL / 2, y * CELL + CELL / 2, 12).fill(0xffffff).stroke({ color: INK, width: 3 });
+    for (const r of t.highlights ?? []) {
+      g.roundRect(r.x * CELL - 4, r.y * CELL - 4, r.w * CELL + 8, r.h * CELL + 8, 14).stroke({ color: 0xffd166, width: 6 }).fill({ color: 0xffd166, alpha: 0.25 });
+    }
+    if (t.highlights) {
+      const label = new Text({ text: `${t.highlights.length} house${t.highlights.length === 1 ? '' : 's'} reached`, style: { fontFamily: 'Fredoka', fontWeight: '700', fontSize: 18, fill: 0xffffff, stroke: { color: INK, width: 5 } }, resolution: 2, anchor: { x: 0.5, y: 1 } });
+      label.position.set((t.rects[0].x + t.rects[0].w / 2) * CELL, t.rects[0].y * CELL - 6);
+      this.previewG.addChild(label);
+    }
   }
 
   private bindPointer(app: Application): void {
@@ -334,6 +498,8 @@ export class BoardView {
     app.stage.on('pointerdown', (e: FederatedPointerEvent) => (down = { x: e.global.x, y: e.global.y }));
     app.stage.on('pointermove', (e: FederatedPointerEvent) => {
       const key = square(e);
+      const [hx, hy] = key.split(',').map(Number);
+      this.onHover?.({ x: hx, y: hy, sx: e.global.x, sy: e.global.y });
       if (key === this.hover) return;
       this.hover = key;
       this.cycle = 0;
@@ -351,6 +517,7 @@ export class BoardView {
       if (moved < 6 && t && this.onPick) this.onPick(t.id);
     });
     app.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    app.canvas.addEventListener('mouseleave', () => this.onHover?.(null));
     window.addEventListener('keydown', (e) => {
       if (e.key === 'r' || e.key === 'R') {
         this.cycle++;
@@ -491,15 +658,11 @@ export class BoardView {
     const rnd = seededRandom(map.tiles.length * 997 + roads.length);
     for (let i = 0; i < count && roads.length; i++) {
       const [sx, sy] = roads[Math.floor(rnd() * roads.length)];
-      const car = new Container();
-      const body = new Graphics()
-        .roundRect(-13, -8, 26, 16, 6).fill(CAR_COLORS[i % CAR_COLORS.length]).stroke({ color: 0x2b2d42, width: 2 })
-        .roundRect(-4, -6, 11, 12, 3).fill(0xfffaf0).stroke({ color: 0x2b2d42, width: 1.5 })
-        .rect(5, -5, 3, 10).fill(0x9ad4ea);
-      car.addChild(body);
+      const car = this.makeCar(CAR_COLORS[i % CAR_COLORS.length]);
       const beam = new Sprite({ texture: this.glow, anchor: { x: 0.15, y: 0.5 }, tint: 0xfff1c1, alpha: 0.8 });
       beam.scale.set(0.9, 0.45);
       this.lights.addChild(beam);
+      this.beams.push(beam);
       this.cars.addChild(car);
       this.driveCar(map, car, beam, sx, sy, -1, -1, rnd);
     }
@@ -528,7 +691,7 @@ export class BoardView {
       beam.position.set(car.x + Math.cos(car.rotation) * 12, car.y + Math.sin(car.rotation) * 12);
       beam.rotation = car.rotation;
     });
-    this.anims.push(tl);
+    this.carAnims.push(tl);
   }
 
   private spawnClouds(map: GameMap): void {

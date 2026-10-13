@@ -35,7 +35,7 @@ export function EmployeeCard({ type, selected, dim, mini, badge, onClick, title 
       style={{ '--cat': CATEGORY_COLOR[def.category] ?? '#555' } as React.CSSProperties}
       onClick={onClick}
       disabled={!onClick}
-      title={title ?? `${def.name}: ${def.ability}`}
+      data-tip={title ?? `${def.name}${def.salary ? ' ($5 salary)' : ''}\n${def.ability}${def.trainsInto.length ? `\nTrains into: ${def.trainsInto.map((t) => EMPLOYEES[t].name).join(', ')}` : ''}`}
     >
       {imageOf(type) ? <img src={imageOf(type)} alt="" /> : <span className="emp-ph">{type === 'ceo' ? '👑' : def.name.slice(0, 3)}</span>}
       <span className="emp-name">{def.name}</span>

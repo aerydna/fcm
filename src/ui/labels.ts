@@ -23,6 +23,32 @@ export const PHASE_LABEL: Record<string, string> = {
 
 export const STEP_LABEL = ['Recruit', 'Train', 'Marketing', 'Food & drinks', 'Houses & gardens', 'Restaurants'];
 
+export const STEP_HELP = [
+  'Recruit: hire entry-level staff (CEO gives 1 hire, recruiters more). New hires go to the beach.',
+  'Train: promote a beach card one step along its career using trainers/coaches/gurus.',
+  'Marketing: marketeers place campaigns that create demand on houses at the end of the turn.',
+  'Food & drinks: kitchen staff cook, buyers collect drinks. Unsold stock is thrown away at clean-up.',
+  'Houses & gardens: a new business developer places a house or a garden (gardens double the price paid).',
+  'Restaurants: local/regional managers open or move restaurants.',
+];
+
+export const PHASE_HELP: Record<string, string> = {
+  restructuring: 'Restructuring: everyone secretly chooses who works this turn and builds the company pyramid.',
+  'order-of-business': 'Order of business: the player with most open slots picks turn order first.',
+  working: 'Working 9-5: in turn order each chain recruits, trains, markets, cooks, builds.',
+  dinnertime: 'Dinnertime: each house with demand buys from the chain with the lowest price + distance that has ALL the items in stock.',
+  payday: 'Payday: pay $5 per salaried employee (also those on the beach). Fire people to save money.',
+  'marketing-campaigns': 'Marketing: every campaign puts demand tokens on the houses it reaches (lowest number first).',
+  'clean-up': 'Clean-up: unsold food and drinks are thrown away; coming-soon restaurants open.',
+};
+
+export const CAMPAIGN_HELP: Record<string, string> = {
+  billboard: 'Billboard: demand on the houses directly next to it (up/down/left/right).',
+  mailbox: 'Mailbox: demand on every house in its block (the area enclosed by roads).',
+  airplane: 'Airplane: demand on every house in the rows or columns it flies over (1, 3 or 5 wide).',
+  radio: 'Radio: demand on every house on its tile and on the 8 surrounding tiles.',
+};
+
 export const MILESTONE_LABEL = (id: string) => MILESTONES[id]?.name ?? id;
 export const MILESTONES_EFFECT = (id: string) => MILESTONES[id]?.effect ?? '';
 

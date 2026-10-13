@@ -27,6 +27,7 @@ export function MainMenu({ onStart }: { onStart: (game: NewGame) => void }) {
               className={`chain ${c.id === chain ? 'selected' : ''}`}
               style={{ '--chain': c.color } as React.CSSProperties}
               onClick={() => setChain(c.id)}
+              data-tip={`Play as ${c.name}. Chains differ only in color and logo.`}
             >
               <img src={c.logo} alt="" />
               <span>{c.name}</span>
@@ -37,14 +38,14 @@ export function MainMenu({ onStart }: { onStart: (game: NewGame) => void }) {
         <h2>Rival CPUs</h2>
         <div className="difficulties">
           {DIFFICULTIES.map((d) => (
-            <button key={d.id} className={`difficulty ${d.id === difficulty ? 'selected' : ''}`} onClick={() => setDifficulty(d.id)}>
+            <button key={d.id} className={`difficulty ${d.id === difficulty ? 'selected' : ''}`} onClick={() => setDifficulty(d.id)} data-tip={`Both CPU rivals play at "${d.title}" level.`}>
               <strong>{d.title}</strong>
               <small>{d.blurb}</small>
             </button>
           ))}
         </div>
 
-        <button className="cta" onClick={() => onStart({ chain, difficulty })}>
+        <button className="cta" onClick={() => onStart({ chain, difficulty })} data-tip="Start a 3-player game: you vs 2 CPU chains on a random 4×3 map.">
           Open for business
         </button>
       </section>

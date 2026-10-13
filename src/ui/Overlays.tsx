@@ -5,6 +5,8 @@ import type { GameState, PlayerId } from '../engine/types';
 import type { DinnerReport, Note, TurnStats } from '../game/controller';
 import { CHAINS } from './chains';
 import { CompanyView } from './CompanyView';
+import { EmployeeCard } from './EmployeeCard';
+import type { Spotlight } from '../game/spotlight';
 import { StaffGuide } from './StaffGuide';
 import { GOOD_ICON } from './icons';
 import { chainName, MILESTONE_LABEL, MILESTONES_EFFECT, milestoneImage, MILESTONE_SHORT, reserveLabel } from './labels';
@@ -22,7 +24,7 @@ function Modal({ title, onClose, children, wide }: { title: React.ReactNode; onC
       <div className={`modal ${wide ? 'wide' : ''}`} onClick={(e) => e.stopPropagation()}>
         <header>
           <h2>{title}</h2>
-          <button className="ghost" onClick={onClose}>
+          <button className="ghost" onClick={onClose} data-tip="Close (Esc)">
             Close ✕
           </button>
         </header>
@@ -132,7 +134,7 @@ export function MilestoneBoard({ view, onClose }: { view: GameState; onClose: ()
                 <span className="ms-status">
                   {owners.length
                     ? owners.map((p) => (
-                        <img key={p.id} className="owner" src={chainOf(view, p.id).logo} title={chainName(view, p.id)} alt="" />
+                        <img key={p.id} className="owner" src={chainOf(view, p.id).logo} data-tip={chainName(view, p.id)} alt="" />
                       ))
                     : status === 'open'
                       ? 'Available'
@@ -207,10 +209,54 @@ export function DinnerReportModal({ view, report, me, onClose }: { view: GameSta
         </tbody>
       </table>
       {report.bankBroken > 0 && <p className="error">{report.bankBroken === 1 ? 'The bank broke: reserve cards were revealed.' : 'The bank broke again: game over.'}</p>}
-      <button className="cta small" onClick={onClose}>
+      <button className="cta small" onClick={onClose} data-tip="Back to the game (Payday is next).">
         Continue &rarr;
       </button>
     </Modal>
+  );
+}
+
+export interface RivalItem {
+  id: number;
+  player: PlayerId;
+  spot: Spotlight;
+}
+
+/** Highlighted banners for what the CPU chains just did. */
+export function RivalFeed({ view, items }: { view: GameState; items: RivalItem[] }) {
+  return (
+    <div className="rival-feed">
+      {items.map((it) => {
+        const chain = chainOf(view, it.player);
+        const [from, to] = it.spot.cards ?? [];
+        return (
+          <div key={it.id} className="rival" style={{ '--chain': chain.color } as React.CSSProperties}>
+            <div className="rival-head">
+              <img src={chain.logo} alt="" />
+              <b>{chain.name}</b>
+            </div>
+            <div className="rival-body">
+              <span className="rival-icon">{it.spot.icon}</span>
+              <div className="rival-text">
+                <b>{it.spot.title}</b>
+                {it.spot.detail && <span>{it.spot.detail}</span>}
+              </div>
+              {from && (
+                <div className="rival-cards">
+                  <EmployeeCard type={from} mini />
+                  {to && (
+                    <>
+                      <span className="arrow">→</span>
+                      <EmployeeCard type={to} mini />
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 

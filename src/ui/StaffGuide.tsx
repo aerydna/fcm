@@ -21,7 +21,7 @@ function GuideCard({ type, view }: { type: string; view: GameState }) {
         <div className="guide-tags">
           {def.entry && <span className="tag hire">hire</span>}
           {def.salary ? <span className="tag salary">$5</span> : <span className="tag free">no salary</span>}
-          {def.topPosition && <span className="tag top" title="Only one per player">1×</span>}
+          {def.topPosition && <span className="tag top" data-tip="Top position: you may own only one.">1×</span>}
           {def.slots && <span className="tag">{def.slots} slots</span>}
           <span className={`tag ${left ? '' : 'out'}`}>{left} left</span>
         </div>

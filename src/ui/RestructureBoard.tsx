@@ -144,7 +144,7 @@ export function RestructureBoard({ view, p, onReveal, onHide }: Props) {
           <div className="rs-stats">
             <span className="kpi">CEO slots <b>{view.ceoSlots}</b></span>
             <span className="kpi">At work <b>{placed.size}</b></span>
-            <span className="kpi" title="More open slots = earlier choice of turn order">Open slots <b>{openSlots}</b></span>
+            <span className="kpi" data-tip="More open slots = earlier choice of turn order">Open slots <b>{openSlots}</b></span>
           </div>
         </header>
 
@@ -185,10 +185,10 @@ export function RestructureBoard({ view, p, onReveal, onHide }: Props) {
         )}
 
         <footer>
-          <button className="ghost" onClick={onHide}>
+          <button className="ghost" onClick={onHide} data-tip="Hide this board to look at the map. Reopen it from the panel on the right.">
             Look at the map
           </button>
-          <button className="cta small" onClick={() => onReveal({ type: 'restructure', atWork: [ceoUid(p), ...placed] })}>
+          <button className="cta small" onClick={() => onReveal({ type: 'restructure', atWork: [ceoUid(p), ...placed] })} data-tip="Confirm: these employees work this turn. Everyone reveals at the same time.">
             Reveal &rarr;
           </button>
         </footer>

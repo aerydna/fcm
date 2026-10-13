@@ -5,6 +5,7 @@ import type { Action, GameEvent, GameState, Goods, PlayerId } from '../engine/ty
 import type { Difficulty } from '../ui/chains';
 import { actionLabel, eventLabel } from '../ui/labels';
 import { GOOD_ICON as GOOD_TEXT } from '../ui/icons';
+import { type Spotlight, spotlightFor } from './spotlight';
 
 export interface LogEntry {
   round: number;
@@ -19,6 +20,8 @@ export interface TurnStats {
   produced: Partial<Goods>;
   hired: string[];
   trained: [string, string][];
+  /** Notable actions this round, in order (chips for the summary). */
+  did: { icon: string; chip: string; title: string }[];
 }
 
 export interface DinnerReport {
@@ -33,10 +36,11 @@ export interface DinnerReport {
 }
 
 export interface Note {
-  kind: 'milestone' | 'production' | 'bank' | 'staff';
+  kind: 'milestone' | 'production' | 'bank' | 'staff' | 'rival';
   player: PlayerId;
   title: string;
   detail?: string;
+  spot?: Spotlight;
 }
 
 export interface Snapshot {
@@ -51,6 +55,8 @@ export interface Snapshot {
 type Listener = (events: GameEvent[], snapshot: Snapshot, notes: Note[]) => void;
 
 const CPU_DELAY = 260;
+/** Pause after a notable CPU action so the player can read the highlight. */
+const CPU_SHOW = 1800;
 
 export class GameController {
   private state: GameState;
@@ -58,6 +64,11 @@ export class GameController {
   private readonly listeners = new Set<Listener>();
   private running = false;
   private disposed = false;
+  private holdUntil = 0;
+  private paused = 0;
+  private lastNotable = false;
+  /** CPU speed multiplier (1, 2, 4). */
+  speed = 1;
 
   constructor(
     seed: number,
@@ -70,7 +81,7 @@ export class GameController {
   }
 
   private freshStats(): TurnStats[] {
-    return this.state.players.map((p) => ({ cashStart: p.cash, produced: {}, hired: [], trained: [] }));
+    return this.state.players.map((p) => ({ cashStart: p.cash, produced: {}, hired: [], trained: [], did: [] }));
   }
 
   get current(): Snapshot {
@@ -99,6 +110,20 @@ export class GameController {
     void this.runCpus();
   }
 
+  /** Delays CPU moves so the player can follow an animation. */
+  hold(ms: number): void {
+    this.holdUntil = Math.max(this.holdUntil, Date.now() + ms);
+  }
+
+  /** Stops CPU moves until a matching resume() (e.g. while a splash waits for Continue). */
+  pause(): void {
+    this.paused++;
+  }
+
+  resume(): void {
+    this.paused = Math.max(0, this.paused - 1);
+  }
+
   dispose(): void {
     this.disposed = true;
     this.listeners.clear();
@@ -110,8 +135,15 @@ export class GameController {
     this.state = state;
     const entries: LogEntry[] = [];
     const notes: Note[] = [];
-    let stats = this.snapshot.stats.map((s) => ({ ...s, produced: { ...s.produced }, hired: [...s.hired], trained: [...s.trained] }));
+    let stats = this.snapshot.stats.map((s) => ({ ...s, produced: { ...s.produced }, hired: [...s.hired], trained: [...s.trained], did: [...s.did] }));
     let report = this.snapshot.report;
+
+    const spot = spotlightFor(before, state, player, action);
+    this.lastNotable = !!spot && player !== this.human;
+    if (spot) {
+      stats[player].did.push({ icon: spot.icon, chip: spot.chip, title: spot.title });
+      if (player !== this.human) notes.push({ kind: 'rival', player, title: spot.title, detail: spot.detail, spot });
+    }
 
     if (action.type !== 'endStep' && action.type !== 'chooseReserve') entries.push({ round: before.round, player, text: actionLabel(before, player, action) });
     if (action.type === 'produce' || action.type === 'buyDrinks') {
@@ -137,7 +169,7 @@ export class GameController {
         const zeros = () => state.players.map(() => 0);
         report = { round: before.round, served: [], unserved: [], dinner: zeros(), waitresses: zeros(), cfo: zeros(), salaries: state.players.map(() => null), bankBroken: 0 };
       }
-      if (e.type === 'phase' && e.phase === 'restructuring') stats = state.players.map((p) => ({ cashStart: p.cash, produced: {}, hired: [], trained: [] }));
+      if (e.type === 'phase' && e.phase === 'restructuring') stats = state.players.map((p) => ({ cashStart: p.cash, produced: {}, hired: [], trained: [], did: [] }));
       if (!report) continue;
       if (e.type === 'served') report.served.push({ house: e.house, player: e.player, goods: e.goods, income: e.income });
       if (e.type === 'income' && e.reason === 'dinner') report.dinner[e.player] += e.amount;
@@ -168,7 +200,9 @@ export class GameController {
     this.running = true;
     this.publish([]);
     while (!this.disposed && this.state.active !== null && this.state.active !== this.human) {
-      await new Promise((r) => setTimeout(r, CPU_DELAY));
+      await new Promise((r) => setTimeout(r, (this.lastNotable ? CPU_SHOW : CPU_DELAY) / this.speed));
+      while (!this.disposed && Date.now() < this.holdUntil) await new Promise((r) => setTimeout(r, this.holdUntil - Date.now()));
+      while (!this.disposed && this.paused > 0) await new Promise((r) => setTimeout(r, 100));
       if (this.disposed) break;
       const me = this.state.active;
       this.commit(me, chooseEasy(visibleState(this.state, me), me));

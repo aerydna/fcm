@@ -230,21 +230,31 @@ export function trainerSlotsLeft(p: Player, uid: number): number {
 }
 
 export function stepAvailable(state: GameState, p: Player, step: number): boolean {
+  return stepBlocker(state, p, step) === null;
+}
+
+/** Why a Working 9-5 step cannot be done right now, or null if it can. */
+export function stepBlocker(state: GameState, p: Player, step: number): string | null {
   switch (WORK_STEPS[step]) {
     case 'recruit':
-      return recruitActions(p) > p.turn.recruitsUsed && Object.values(EMPLOYEES).some((e) => e.entry && state.supply[e.id] > 0);
+      if (recruitActions(p) <= p.turn.recruitsUsed) return 'No hires left this turn.';
+      return Object.values(EMPLOYEES).some((e) => e.entry && state.supply[e.id] > 0) ? null : 'No entry-level cards left in the supply.';
     case 'train':
-      return p.atWork.some((u) => trainerSlotsLeft(p, u) > 0) && beach(p).some((c) => EMPLOYEES[c.type].trainsInto.length > 0);
+      if (!p.atWork.some((u) => trainerSlotsLeft(p, u) > 0)) return 'No trainer, coach or guru at work.';
+      return beach(p).some((c) => EMPLOYEES[c.type].trainsInto.length > 0) ? null : 'Nobody on the beach can be trained.';
     case 'marketing':
-      return state.campaignTiles.length > 0 && unusedAtWork(p, isMarketeer).length > 0;
+      if (!unusedAtWork(p, isMarketeer).length) return 'No free marketeer at work.';
+      return state.campaignTiles.length ? null : 'All campaign tiles are in use.';
     case 'food':
-      return unusedAtWork(p, (t) => ['kitchen', 'buyer'].includes(EMPLOYEES[t].category)).length > 0;
+      return unusedAtWork(p, (t) => ['kitchen', 'buyer'].includes(EMPLOYEES[t].category)).length ? null : 'No kitchen staff or drink buyer at work.';
     case 'houses':
-      return unusedAtWork(p, (t) => t === 'new-business-developer').length > 0;
+      return unusedAtWork(p, (t) => t === 'new-business-developer').length ? null : 'No new business developer at work.';
     case 'restaurants':
-      return unusedAtWork(p, (t) => (t === 'local-manager' && p.restaurantsLeft > 0) || t === 'regional-manager').length > 0;
+      if (unusedAtWork(p, (t) => t === 'regional-manager').length) return null;
+      if (!unusedAtWork(p, (t) => t === 'local-manager').length) return 'No local or regional manager at work.';
+      return p.restaurantsLeft > 0 ? null : 'No restaurants left to place.';
     default:
-      return false;
+      return 'Unknown step.';
   }
 }
 
@@ -285,6 +295,7 @@ function advance(state: GameState, events: GameEvent[]): void {
         if (state.round === 1 || !p.cards.some((c) => c.type !== 'ceo' && !c.busyWith)) {
           p.pendingAtWork = [ceoUid(p)];
           state.queue.shift();
+          events.push({ type: 'skipped', player: p.id, phase: 'restructuring', reason: state.round === 1 ? 'First round: only the CEO works.' : 'Only your CEO is available: nobody else to put to work.' });
           continue;
         }
         state.active = p.id;
@@ -296,12 +307,15 @@ function advance(state: GameState, events: GameEvent[]): void {
           state.phase = 'working';
           state.queue = [...state.turnOrder];
           state.workStep = 0;
+          events.push({ type: 'turnOrder', order: [...state.turnOrder] });
           events.push({ type: 'phase', phase: 'working', round: state.round });
           continue;
         }
         const free = state.orderPicks.flatMap((v, i) => (v === null ? [i] : []));
         if (free.length === 1) {
-          state.orderPicks[free[0]] = state.queue.shift()!;
+          const last = state.queue.shift()!;
+          state.orderPicks[free[0]] = last;
+          events.push({ type: 'skipped', player: last, phase: 'order-of-business', reason: `Only position ${free[0] + 1} was left for you.` });
           continue;
         }
         state.active = state.queue[0];
@@ -327,6 +341,7 @@ function advance(state: GameState, events: GameEvent[]): void {
           continue;
         }
         if (!stepAvailable(state, p, state.workStep)) {
+          events.push({ type: 'skipped', player: p.id, phase: 'working', step: state.workStep, reason: stepBlocker(state, p, state.workStep)! });
           state.workStep++;
           continue;
         }
@@ -344,6 +359,7 @@ function advance(state: GameState, events: GameEvent[]): void {
         }
         const p = state.players[state.queue[0]];
         if (salaryDue(p) === 0) {
+          events.push({ type: 'skipped', player: p.id, phase: 'payday', reason: 'No salaries to pay this turn.' });
           finishPayday(state, p, events);
           state.queue.shift();
           continue;
@@ -390,6 +406,7 @@ function startOrder(state: GameState, events: GameEvent[]): void {
     (a, b) => openSlots(state, state.players[b]) - openSlots(state, state.players[a]) || prev.indexOf(a) - prev.indexOf(b),
   );
   state.orderPicks = prev.map(() => null);
+  events.push({ type: 'pickOrder', queue: state.queue.map((id) => ({ player: id, openSlots: openSlots(state, state.players[id]) })) });
   events.push({ type: 'phase', phase: 'order-of-business', round: state.round });
 }
 

@@ -28,7 +28,7 @@ export function CompanyView({ view, player, atWork, showBench = true, compact, o
       onClick={onCardClick && c.type !== 'ceo' ? () => onCardClick(c) : undefined}
     />
   );
-  const empty = (k: string) => <div key={k} className="slot-empty" title="Open slot" />;
+  const empty = (k: string) => <div key={k} className="slot-empty" data-tip="Open slot: room for one more employee." />;
   const bench = beach({ ...player, atWork: [...ids] }).filter((c) => c.type !== 'ceo');
   const busy = player.cards.filter((c) => c.busyWith);
   const salaried = player.cards.filter((c) => EMPLOYEES[c.type].salary).length;

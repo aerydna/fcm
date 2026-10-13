@@ -163,4 +163,7 @@ export type GameEvent =
   | { type: 'milestone'; player: PlayerId; milestone: string }
   | { type: 'bankBroken'; times: number; added: number }
   | { type: 'salaries'; player: PlayerId; amount: number }
+  | { type: 'skipped'; player: PlayerId; phase: string; step?: number; reason: string }
+  | { type: 'pickOrder'; queue: { player: PlayerId; openSlots: number }[] }
+  | { type: 'turnOrder'; order: PlayerId[] }
   | { type: 'gameOver'; winner: PlayerId };
