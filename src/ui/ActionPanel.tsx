@@ -13,6 +13,7 @@ import { chainName, empName, reserveLabel, STEP_LABEL, CAMPAIGN_HELP } from './l
 import { GOOD_NAME } from './icons';
 import { reachedHouses } from '../engine/marketing';
 import { RestructureBoard } from './RestructureBoard';
+import { CampaignConfirm } from './CampaignConfirm';
 
 type Of<T extends Action['type']> = Extract<Action, { type: T }>;
 
@@ -32,10 +33,10 @@ export function ActionPanel({ view, me, board, stats, paused, act }: Props) {
   const [error, setError] = useState<string | null>(null);
   const color = CHAINS.find((c) => c.id === view.players[me].chain)?.color;
   const run = (a: Action) => setError(act(a));
-  const pick = (list: Action[], toTarget: (a: Action) => Target['rects'], marks?: (a: Action) => Target['marks'], highlights?: (a: Action) => Rect[]) => {
+  const pick = (list: Action[], toTarget: (a: Action) => Target['rects'], marks?: (a: Action) => Target['marks'], highlights?: (a: Action) => Rect[], onChoose?: (a: Action) => void) => {
     board.setTargets(
       list.map((a, id) => ({ id, rects: toTarget(a), marks: marks?.(a), highlights: highlights?.(a) })),
-      (id) => run(list[id]),
+      (id) => (onChoose ?? run)(list[id]),
       color,
     );
   };
@@ -124,7 +125,7 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
 
 const rect2 = (x: number, y: number): Rect => ({ x, y, w: 2, h: 2 });
 
-type PickFn = (list: Action[], toTarget: (a: Action) => Rect[], marks?: (a: Action) => Target['marks'], highlights?: (a: Action) => Rect[]) => void;
+type PickFn = (list: Action[], toTarget: (a: Action) => Rect[], marks?: (a: Action) => Target['marks'], highlights?: (a: Action) => Rect[], onChoose?: (a: Action) => void) => void;
 
 function SetupRestaurant({ view, places, pass, pick, run }: { view: GameState; places: Of<'placeRestaurant'>[]; pass?: Action; pick: PickFn; run: (a: Action) => void }) {
   useEffect(() => {
@@ -253,7 +254,7 @@ function Working(props: WorkingProps) {
   }
 }
 
-function Marketing({ view, me, of, pick }: WorkingProps) {
+function Marketing({ view, me, of, pick, run, board }: WorkingProps) {
   const p = view.players[me];
   const all = of('campaign');
   const marketeers = [...new Set(all.map((a) => a.marketeer))];
@@ -266,31 +267,50 @@ function Marketing({ view, me, of, pick }: WorkingProps) {
   const max = m ? EMPLOYEES[typeOf(p, m)].maxDuration ?? 1 : 1;
   const [duration, setDuration] = useState(max);
   const d = Math.min(duration, max);
+  const [pending, setPending] = useState<Of<'campaign'> | null>(null);
 
+  const area = (c: Of<'campaign'>): Rect[] => {
+    if (c.rect) return [c.rect];
+    const size = CAMPAIGN_TILES.find((x) => x.number === c.tile)!.size!;
+    return c.band!.axis === 'row' ? [{ x: 0, y: c.band!.start, w: view.map.width, h: size }] : [{ x: c.band!.start, y: 0, w: size, h: view.map.height }];
+  };
+  const reach = (c: Of<'campaign'>) => {
+    const tile = CAMPAIGN_TILES.find((x) => x.number === c.tile)!;
+    const fake = { number: c.tile, type: tile.type, owner: me, marketeer: 0, good: c.good, remaining: 1, eternal: false, rect: c.rect, band: c.band && { ...c.band, size: tile.size! } } as GameState['campaigns'][number];
+    return reachedHouses(view, fake);
+  };
   const options = useMemo(() => all.filter((a) => a.marketeer === m && a.tile === t && a.good === good).map((a) => ({ ...a, duration: d })), [all, m, t, good, d]);
   useEffect(() => {
+    if (pending) return;
     pick(
       options,
-      (a) => {
-        const c = a as Of<'campaign'>;
-        if (c.rect) return [c.rect];
-        const size = CAMPAIGN_TILES.find((x) => x.number === c.tile)!.size!;
-        return c.band!.axis === 'row' ? [{ x: 0, y: c.band!.start, w: view.map.width, h: size }] : [{ x: c.band!.start, y: 0, w: size, h: view.map.height }];
-      },
+      (a) => area(a as Of<'campaign'>),
       undefined,
+      (a) => reach(a as Of<'campaign'>).map((h) => ({ x: h.x, y: h.y, w: 2, h: 2 })),
       (a) => {
         const c = a as Of<'campaign'>;
-        const tile = CAMPAIGN_TILES.find((x) => x.number === c.tile)!;
-        const fake = { number: c.tile, type: tile.type, owner: me, marketeer: 0, good: c.good, remaining: 1, eternal: false, rect: c.rect, band: c.band && { ...c.band, size: tile.size! } } as GameState['campaigns'][number];
-        return reachedHouses(view, fake).map((h) => ({ x: h.x, y: h.y, w: 2, h: 2 }));
+        setPending(c);
+        board.pin({ id: -1, rects: area(c), highlights: reach(c).map((h) => ({ x: h.x, y: h.y, w: 2, h: 2 })) });
       },
     );
-  }, [options]);
+  }, [options, pending]);
+  useEffect(() => () => board.pin(null), [board]);
+
+  const cancel = () => {
+    board.pin(null);
+    setPending(null);
+  };
+  const confirm = () => {
+    board.pin(null);
+    const c = pending!;
+    setPending(null);
+    run(c);
+  };
 
   const tileType = (n: number) => CAMPAIGN_TILES.find((x) => x.number === n)!.type;
   const def = m ? EMPLOYEES[typeOf(p, m)] : null;
   return (
-    <Section title="Marketing" hint="Pick marketeer, campaign, product and duration, then click the map. Hover the map: the houses that will get demand light up. R / right-click rotates.">
+    <Section title="Marketing" hint="Pick marketeer, campaign, product and duration, then click the map and confirm. Hover the map: the houses that will get demand light up. R / right-click rotates.">
       <div className="chips">
         {marketeers.map((u) => (
           <button key={u} className={`chip ${u === m ? 'on' : ''}`} onClick={() => setMarketeer(u)} data-tip={`${empName(typeOf(p, u))}: ${EMPLOYEES[typeOf(p, u)].ability}`}>
@@ -317,6 +337,7 @@ function Marketing({ view, me, of, pick }: WorkingProps) {
         Duration <b>{d}</b>
         <input type="range" min={1} max={max} value={d} onChange={(e) => setDuration(Number(e.target.value))} />
       </label>
+      {pending && <CampaignConfirm view={view} me={me} c={pending} houses={reach(pending)} onCancel={cancel} onConfirm={confirm} />}
     </Section>
   );
 }

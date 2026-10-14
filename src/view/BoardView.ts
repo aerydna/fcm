@@ -80,6 +80,7 @@ export class BoardView {
   private styles: { color: number; logo: Texture }[] = [];
   private anchors = new Map<string, Target[]>();
   private hover: string | null = null;
+  private pinned: Target | null = null;
   private cycle = 0;
   private onPick: ((id: number) => void) | null = null;
   private previewColor = 0x2bb3a3;
@@ -445,6 +446,10 @@ export class BoardView {
   /** Shows placement options; hover previews, R / right-click cycles options on the same anchor, click picks. */
   setTargets(targets: Target[] | null, onPick?: (id: number) => void, color?: string): void {
     this.anchors.clear();
+    if (!targets) {
+      this.pinned = null;
+      this.targetsG.visible = true;
+    }
     this.onPick = targets ? (onPick ?? null) : null;
     if (color) this.previewColor = parseInt(color.slice(1), 16);
     for (const t of targets ?? []) {
@@ -466,8 +471,16 @@ export class BoardView {
   }
 
   private current(): Target | undefined {
+    if (this.pinned) return this.pinned;
     const list = this.hover ? this.anchors.get(this.hover) : undefined;
     return list?.[this.cycle % list.length];
+  }
+
+  /** Keeps one option previewed (ignoring hover and clicks), e.g. while a confirm dialog is open. */
+  pin(t: Target | null): void {
+    this.pinned = t;
+    this.targetsG.visible = !t;
+    this.drawPreview();
   }
 
   private drawPreview(): void {
@@ -514,7 +527,7 @@ export class BoardView {
         return;
       }
       const t = this.current();
-      if (moved < 6 && t && this.onPick) this.onPick(t.id);
+      if (moved < 6 && t && this.onPick && !this.pinned) this.onPick(t.id);
     });
     app.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     app.canvas.addEventListener('mouseleave', () => this.onHover?.(null));

@@ -1084,6 +1084,60 @@ button { font: inherit; cursor: pointer; border: 0; }
   70% { opacity: 1; transform: translateX(10px) scale(1.02); }
 }
 
+/* ---------- Undo & confirm ---------- */
+
+.undo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 6px 12px;
+  border-radius: 14px;
+  background: var(--cream);
+  border: 3px solid var(--ink);
+  box-shadow: 0 4px 0 var(--ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+}
+.undo small { font-weight: 500; opacity: 0.7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.undo:hover:not(:disabled) { background: var(--mint); }
+.undo:disabled { opacity: 0.5; cursor: default; }
+
+.confirm-backdrop { position: fixed; inset: 0; z-index: 20; background: rgba(12, 10, 24, 0.15); pointer-events: auto; animation: fade 0.2s both; }
+.confirm {
+  position: absolute;
+  top: 86px;
+  right: 18px;
+  width: 400px;
+  max-height: calc(100vh - 110px);
+  overflow-y: auto;
+  padding: 16px 18px;
+  border-radius: 22px;
+  background: linear-gradient(var(--cream), var(--cream-2));
+  border: 4px solid var(--ink);
+  border-top: 10px solid var(--gold);
+  box-shadow: 0 8px 0 var(--ink), 0 30px 60px rgba(0, 0, 0, 0.45);
+  animation: calm-in 0.25s ease-out both;
+}
+.confirm h2 { margin: 0 0 8px; font-family: 'Pacifico', cursive; font-weight: 400; font-size: 26px; }
+.confirm-head { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
+.confirm-head div { display: flex; flex-direction: column; }
+.confirm-head div span { font-size: 12.5px; opacity: 0.8; }
+.confirm-icon { font-size: 40px; }
+.confirm-facts { width: 100%; border-collapse: collapse; font-size: 13px; }
+.confirm-facts td { padding: 5px 4px; border-top: 1px dashed rgba(43, 29, 40, 0.25); vertical-align: top; }
+.confirm-facts td:first-child { width: 72px; font-weight: 700; color: #9a4b3a; text-transform: uppercase; font-size: 11px; letter-spacing: 0.08em; }
+.confirm-facts .with-card { display: flex; align-items: center; gap: 8px; }
+.confirm-facts .with-card .emp.mini { width: 40px; font-size: 0; }
+.confirm-houses { display: flex; flex-wrap: wrap; gap: 4px; }
+.confirm-houses span { padding: 1px 6px; border-radius: 8px; background: #fff; border: 1.5px solid var(--ink); }
+.confirm-houses span.full { opacity: 0.55; border-color: var(--cherry); color: var(--cherry); }
+.confirm .warn { margin: 8px 0 0; padding: 6px 10px; border-radius: 10px; background: #ffe1dc; border: 2px solid var(--cherry); font-size: 13px; font-weight: 600; }
+.confirm-ms { list-style: none; margin: 8px 0 0; padding: 6px 10px; border-radius: 10px; background: #fff1b8; border: 2px solid var(--gold); font-size: 13px; }
+.confirm-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; }
+
 /* ---------- Motion ---------- */
 
 @keyframes spin { to { transform: rotate(360deg); } }

@@ -3,7 +3,7 @@ import { EMPLOYEES, GOODS, type Good } from '../engine/data';
 import { actionYield, apply, IllegalAction, newGame, visibleState } from '../engine/game';
 import type { Action, GameEvent, GameState, Goods, PlayerId } from '../engine/types';
 import type { Difficulty } from '../ui/chains';
-import { actionLabel, eventLabel } from '../ui/labels';
+import { actionLabel, eventLabel, STEP_LABEL } from '../ui/labels';
 import { GOOD_ICON as GOOD_TEXT } from '../ui/icons';
 import { type Spotlight, spotlightFor } from './spotlight';
 
@@ -62,6 +62,8 @@ export interface Snapshot {
   thinking: PlayerId | null;
   stats: TurnStats[];
   report: DinnerReport | null;
+  /** Your last undoable action, or null. */
+  undo: string | null;
 }
 
 type Listener = (events: GameEvent[], snapshot: Snapshot, notes: Note[]) => void;
@@ -80,6 +82,7 @@ export class GameController {
   private paused = 0;
   private lastNotable = false;
   private readonly recaps = new Map<PlayerId, TurnRecap>();
+  private history: { state: GameState; snapshot: Snapshot; recaps: [PlayerId, TurnRecap][]; label: string }[] = [];
   /** CPU speed multiplier (1, 2, 4). */
   speed = 1;
 
@@ -90,7 +93,7 @@ export class GameController {
     readonly human: PlayerId = 0,
   ) {
     this.state = newGame({ seed, chains });
-    this.snapshot = { view: visibleState(this.state, human), log: [], thinking: null, stats: this.freshStats(), report: null };
+    this.snapshot = { view: visibleState(this.state, human), log: [], thinking: null, stats: this.freshStats(), report: null, undo: null };
   }
 
   private freshStats(): TurnStats[] {
@@ -109,14 +112,30 @@ export class GameController {
   /** Applies a human action; returns an error message if illegal. */
   act(action: Action): string | null {
     if (this.state.active !== this.human) return 'Not your turn';
+    const label = action.type === 'endStep' && this.state.phase === 'working' ? `Done with ${STEP_LABEL[this.state.workStep]}` : actionLabel(this.state, this.human, action);
+    const saved = { state: this.state, snapshot: structuredClone(this.snapshot), recaps: structuredClone([...this.recaps]), label };
     try {
+      this.history.push(saved);
       this.commit(this.human, action);
     } catch (e) {
+      this.history.pop();
       if (e instanceof IllegalAction) return e.message;
       throw e;
     }
     void this.runCpus();
     return null;
+  }
+
+  /** Takes back your last action (and whatever the CPUs did after it). */
+  undo(): boolean {
+    const h = this.history.pop();
+    if (!h) return false;
+    this.state = h.state;
+    this.recaps.clear();
+    for (const [id, r] of h.recaps) this.recaps.set(id, r);
+    this.lastNotable = false;
+    this.publish([], h.snapshot.log, h.snapshot.stats, h.snapshot.report);
+    return true;
   }
 
   start(): void {
@@ -146,6 +165,8 @@ export class GameController {
     const before = this.state;
     const { state, events } = apply(before, player, action);
     this.state = state;
+    // Hidden information became public: going back would let you peek.
+    if (events.some((e) => (e.type === 'phase' && e.phase === 'order-of-business') || e.type === 'gameOver')) this.history = [];
     const entries: LogEntry[] = [];
     const notes: Note[] = [];
     let stats = this.snapshot.stats.map((s) => ({ ...s, produced: { ...s.produced }, hired: [...s.hired], trained: [...s.trained], did: [...s.did] }));
@@ -223,7 +244,8 @@ export class GameController {
 
   private publish(events: GameEvent[], log = this.snapshot.log, stats = this.snapshot.stats, report = this.snapshot.report, notes: Note[] = []): void {
     const cpuTurn = this.state.active !== null && this.state.active !== this.human;
-    this.snapshot = { view: visibleState(this.state, this.human), log, thinking: cpuTurn ? this.state.active : null, stats, report };
+    const undo = this.history.at(-1)?.label ?? null;
+    this.snapshot = { view: visibleState(this.state, this.human), log, thinking: cpuTurn ? this.state.active : null, stats, report, undo };
     for (const fn of this.listeners) fn(events, this.snapshot, notes);
   }
 
@@ -237,6 +259,8 @@ export class GameController {
       while (!this.disposed && this.paused > 0) await new Promise((r) => setTimeout(r, 100));
       if (this.disposed) break;
       const me = this.state.active;
+      // An undo during the waits may have handed the turn back to the human.
+      if (me === null || me === this.human) break;
       this.commit(me, chooseEasy(visibleState(this.state, me), me));
     }
     this.running = false;

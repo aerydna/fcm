@@ -26,10 +26,16 @@ export function TooltipLayer() {
       const d = (e as CustomEvent<{ text: string; x: number; y: number } | null>).detail;
       setTip(d ? { text: d.text, x: d.x, y: d.y - 18, below: d.y < 200 } : null);
     };
+    const clear = () => {
+      el = null;
+      setTip(null);
+    };
     document.addEventListener('mouseover', over);
+    document.addEventListener('click', clear, true);
     window.addEventListener('board-tip', board);
     return () => {
       document.removeEventListener('mouseover', over);
+      document.removeEventListener('click', clear, true);
       window.removeEventListener('board-tip', board);
     };
   }, []);

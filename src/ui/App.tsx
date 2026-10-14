@@ -30,6 +30,7 @@ export function App({ board }: { board: BoardView }) {
   const [speed, setSpeed] = useState(1);
   const [splash, setSplash] = useState<Splash | null>(null);
   const [moment, setMoment] = useState<Moment | null>(null);
+  const [undos, setUndos] = useState(0);
   const [sequencing, setSequencing] = useState(false);
   const latest = useRef<Snapshot | undefined>(undefined);
   const busy = useRef(false);
@@ -171,6 +172,26 @@ export function App({ board }: { board: BoardView }) {
   };
 
   const c = ctrl.current;
+  const canUndo = !!snap?.undo && !sequencing && !moment && !splash;
+  const undo = () => {
+    if (!canUndo || !c?.undo()) return;
+    setUndos((n) => n + 1);
+    setRivals([]);
+    setToasts([]);
+    board.setTargets(null);
+  };
+  const undoRef = useRef(undo);
+  undoRef.current = undo;
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        undoRef.current();
+      }
+    };
+    window.addEventListener('keydown', key);
+    return () => window.removeEventListener('keydown', key);
+  }, []);
   const report =
     snap?.report && !sequencing && snap.report.round > reportSeen && (snap.report.served.length > 0 || snap.report.waitresses.some((x) => x > 0) || snap.report.bankBroken > 0)
       ? snap.report
@@ -196,7 +217,12 @@ export function App({ board }: { board: BoardView }) {
             }}
           />
           <aside className={`side ${moment ? 'blocked' : ''}`}>
-            <ActionPanel view={snap.view} me={c.human} board={board} stats={snap.stats[c.human]} paused={sequencing} act={(a) => c.act(a)} />
+            {snap.undo && (
+              <button className="undo" onClick={undo} disabled={!canUndo} data-tip={`Take back: ${snap.undo} (Ctrl+Z).\nWhat the CPUs did after it is taken back too. Not possible past a structure reveal.`}>
+                ↶ Undo <small>{snap.undo}</small>
+              </button>
+            )}
+            <ActionPanel key={undos} view={snap.view} me={c.human} board={board} stats={snap.stats[c.human]} paused={sequencing} act={(a) => c.act(a)} />
             <LogPanel view={snap.view} log={snap.log} />
           </aside>
           <Toasts view={snap.view} toasts={toasts} me={c.human} />
