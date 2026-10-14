@@ -156,7 +156,7 @@ function PlayerCard({ view, p, pos, me, difficulty, stats, onOpen }: { view: Gam
       {!view.phase.startsWith('setup') && (
         <div className="chip-row">
           <span className="row-tag" data-tip="What this chain can still do this turn (from the employees at work).">Can</span>
-          {capabilities(p).map((c, i) => (
+          {capabilities(p, p.id === me).map((c, i) => (
             <span key={i} className="cap" data-tip={c.tip}>
               {c.icon}
               {c.text}

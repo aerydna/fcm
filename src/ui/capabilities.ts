@@ -10,7 +10,8 @@ export interface Capability {
 }
 
 /** What a chain can still do this round, from its revealed structure. */
-export function capabilities(p: Player): Capability[] {
+export function capabilities(p: Player, mine = false): Capability[] {
+  if (!p.atWork.length && mine) return [{ icon: '🗂️', text: 'choosing', tip: 'Pick who works this turn in the Restructuring panel.' }];
   if (!p.atWork.length) {
     return [{ icon: '❔', text: 'hidden', tip: `Structure not revealed yet. Owns ${p.cards.length} card(s): ${[...new Set(p.cards.map((c) => EMPLOYEES[c.type].name))].join(', ')}.` }];
   }

@@ -3,6 +3,7 @@ import { GOODS } from '../engine/data';
 import { stepBlocker } from '../engine/game';
 import { salaryDue } from '../engine/rules';
 import type { GameEvent, GameState, PlayerId } from '../engine/types';
+import type { TurnRecap } from '../game/controller';
 import { GOOD_ICON } from './icons';
 import { chainName, STEP_LABEL } from './labels';
 
@@ -25,7 +26,13 @@ export interface Splash {
   rows?: SplashRow[];
 }
 
-export type SequenceStep = { kind: 'splash'; splash: Splash; phase?: string } | { kind: 'dinner' } | { kind: 'demand' };
+export type SequenceStep =
+  | { kind: 'splash'; splash: Splash; phase?: string }
+  | { kind: 'dinner' }
+  | { kind: 'demand' }
+  /** Rivals' structures just revealed: show their companies. */
+  | { kind: 'reveal'; milestones: { player: PlayerId; milestone: string }[] }
+  | { kind: 'recap'; recap: TurnRecap };
 
 export const SPLASH_MS = 3200;
 let seq = 0;
@@ -72,6 +79,10 @@ export function buildSequence(events: GameEvent[], before: GameState | undefined
         break;
       }
       case 'order-of-business': {
+        if (before?.phase === 'restructuring' && after.players.some((pl) => pl.id !== me && pl.cards.length > 1)) {
+          const milestones = events.filter((x): x is Extract<GameEvent, { type: 'milestone' }> => x.type === 'milestone').map((x) => ({ player: x.player, milestone: x.milestone }));
+          out.push({ kind: 'reveal', milestones });
+        }
         const skip = mySkip('order-of-business');
         const tie = pickOrder && new Set(pickOrder.queue.map((q) => q.openSlots)).size < pickOrder.queue.length;
         push({ title: 'Order of Business', subtitle: skip ? 'Your position was assigned' : 'Most open slots picks the turn order first', icon: '🔢', tone: skip ? 'skipped' : 'day', skipped: skip?.reason, rows: [

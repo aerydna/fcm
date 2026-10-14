@@ -7,12 +7,15 @@ import { describeSquare } from './boardInfo';
 import { CHAINS, type Difficulty } from './chains';
 import { GameHud, LogPanel } from './GameHud';
 import { MainMenu, type NewGame } from './MainMenu';
+import { CompanyReveal, TurnRecapCard } from './Moments';
 import { DinnerReportModal, MilestoneBoard, PlayerDrawer, type RivalItem, RivalFeed, StaffModal, type Toast, Toasts } from './Overlays';
 import { buildSequence, PhaseSplash, type SequenceStep, type Splash } from './PhaseSplash';
 import { showBoardTip, TooltipLayer } from './Tooltip';
 
 let toastSeq = 0;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+type Moment = Extract<SequenceStep, { kind: 'reveal' | 'recap' }>;
 
 export function App({ board }: { board: BoardView }) {
   const ctrl = useRef<GameController | null>(null);
@@ -26,6 +29,7 @@ export function App({ board }: { board: BoardView }) {
   const [rivals, setRivals] = useState<RivalItem[]>([]);
   const [speed, setSpeed] = useState(1);
   const [splash, setSplash] = useState<Splash | null>(null);
+  const [moment, setMoment] = useState<Moment | null>(null);
   const [sequencing, setSequencing] = useState(false);
   const latest = useRef<Snapshot | undefined>(undefined);
   const busy = useRef(false);
@@ -56,9 +60,15 @@ export function App({ board }: { board: BoardView }) {
     });
   const endSplash = useCallback(() => {
     setSplash(null);
+    setMoment(null);
     splashDone.current?.();
     splashDone.current = null;
   }, []);
+  const showMoment = (m: Moment) =>
+    new Promise<void>((resolve) => {
+      splashDone.current = resolve;
+      setMoment(m);
+    });
 
   /** Plays the batch's splash screens and animations in order, CPUs paused; the board is synced at the end. */
   const playBatch = (steps: SequenceStep[], events: GameEvent[], c: GameController) => {
@@ -75,6 +85,13 @@ export function App({ board }: { board: BoardView }) {
           await showSplash(step.splash);
         }
         if (step.kind === 'dinner') await sleep(board.animateDinner(events) + 200);
+        if (step.kind === 'recap') {
+          setRivals([]);
+          const color = CHAINS.find((ch) => ch.id === latest.current?.view.players[step.recap.player].chain)?.color;
+          for (const it of step.recap.items) if (it.rect && color) board.flashRect(it.rect, color, it.chip);
+          await showMoment(step);
+        }
+        if (step.kind === 'reveal') await showMoment(step);
         if (step.kind === 'demand' && latest.current) {
           board.sync(latest.current.view);
           board.animateEvents(events);
@@ -96,7 +113,8 @@ export function App({ board }: { board: BoardView }) {
       const color = CHAINS.find((ch) => ch.id === latest.current?.view.players[n.player].chain)?.color;
       if (n.spot!.rect && color) board.flashRect(n.spot!.rect, color, 'NEW');
     }
-    const shown = notes.filter((n) => n.kind !== 'rival' && ((n.kind !== 'production' && n.kind !== 'staff') || n.player === human));
+    // Rival milestones are shown in their turn recap or in the structure reveal.
+    const shown = notes.filter((n) => n.kind === 'bank' || (n.kind !== 'rival' && n.kind !== 'turn' && n.player === human));
     if (!shown.length) return;
     const added = shown.map((n) => ({ ...n, id: ++toastSeq }));
     setToasts((t) => [...t, ...added].slice(-4));
@@ -119,7 +137,8 @@ export function App({ board }: { board: BoardView }) {
       const before = latest.current?.view;
       latest.current = s;
       pushNotes(notes, c.human);
-      const steps = buildSequence(events, before, s.view, c.human);
+      const recaps: SequenceStep[] = notes.filter((n) => n.kind === 'turn' && n.recap).map((n) => ({ kind: 'recap', recap: n.recap! }));
+      const steps = [...recaps, ...buildSequence(events, before, s.view, c.human)];
       if (steps.length) playBatch(steps, events, c);
       else if (!busy.current) {
         board.sync(s.view);
@@ -176,7 +195,7 @@ export function App({ board }: { board: BoardView }) {
               c.speed = next;
             }}
           />
-          <aside className="side">
+          <aside className={`side ${moment ? 'blocked' : ''}`}>
             <ActionPanel view={snap.view} me={c.human} board={board} stats={snap.stats[c.human]} paused={sequencing} act={(a) => c.act(a)} />
             <LogPanel view={snap.view} log={snap.log} />
           </aside>
@@ -191,6 +210,8 @@ export function App({ board }: { board: BoardView }) {
         <MainMenu onStart={start} />
       )}
       {splash && <PhaseSplash splash={splash} onDone={endSplash} />}
+      {snap && c && moment?.kind === 'recap' && <TurnRecapCard view={snap.view} recap={moment.recap} onDone={endSplash} />}
+      {snap && c && moment?.kind === 'reveal' && <CompanyReveal view={snap.view} me={c.human} milestones={moment.milestones} onDone={endSplash} />}
       <TooltipLayer />
     </div>
   );

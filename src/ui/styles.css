@@ -906,7 +906,7 @@ button { font: inherit; cursor: pointer; border: 0; }
 @keyframes splash-in { from { opacity: 0; } }
 
 /* Calm splash: every phase except the new-round announcement. */
-.splash.calm { background: rgba(12, 10, 24, 0.55); backdrop-filter: blur(3px); }
+.splash.calm { background: rgba(12, 10, 24, 0.42); }
 .splash.calm .splash-card {
   padding: 22px 34px 24px;
   border-radius: 26px;
@@ -1001,6 +1001,88 @@ button { font: inherit; cursor: pointer; border: 0; }
 .rival-cards .arrow { font-weight: 700; font-size: 18px; }
 @keyframes rival-in { from { opacity: 0; transform: translateX(-60px) scale(0.9); } }
 @keyframes rival-out { to { opacity: 0; transform: translateX(-30px); } }
+
+/* ---------- Moments: wait for the player, map stays visible ---------- */
+
+.side.blocked { pointer-events: none; opacity: 0.55; filter: grayscale(0.4); transition: opacity 0.2s; }
+.moment {
+  position: fixed;
+  top: 86px;
+  left: 322px;
+  z-index: 25;
+  width: 440px;
+  max-height: calc(100vh - 300px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px;
+  background: var(--cream);
+  border: 3px solid var(--ink);
+  border-left: 12px solid var(--chain);
+  box-shadow: 0 6px 0 var(--ink), 0 20px 40px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  animation: rival-in 0.45s cubic-bezier(.2, 1.3, .3, 1) both;
+}
+.moment header { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--chain); color: #fff; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4); }
+.moment header img { width: 36px; height: 36px; border-radius: 50%; background: #fff; }
+.moment header div { display: flex; flex-direction: column; }
+.moment header b { font-size: 17px; }
+.moment header span { font-size: 12px; opacity: 0.9; }
+.recap-cash { margin-left: auto; font-size: 20px !important; font-weight: 700; opacity: 1 !important; }
+.moment-list { list-style: none; margin: 0; padding: 6px 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+.moment-list li { display: flex; align-items: center; gap: 10px; padding: 5px 4px; border-bottom: 1px dashed rgba(43, 29, 40, 0.2); animation: row-in 0.3s both; }
+.moment-list li:last-child { border-bottom: 0; }
+.moment-list.ms { background: linear-gradient(135deg, #fff1b8, #fff6d6); border-bottom: 2px solid var(--gold); }
+.moment-ms img { width: 64px; border-radius: 8px; border: 2px solid var(--ink); animation: stamp 0.45s 0.2s cubic-bezier(.2, 1.6, .3, 1) both; }
+.moment-ms div { display: flex; flex-direction: column; }
+.moment-ms b { font-size: 15px; color: #9a4b3a; }
+.moment-ms span { font-size: 12px; }
+.moment footer { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-top: 2px solid rgba(43, 29, 40, 0.15); }
+.recap-stock { flex: 1; font-size: 13px; font-weight: 600; }
+.moment .cta.small, .reveal .cta.small { font-size: 18px; padding: 6px 20px; }
+
+.moment-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 28;
+  display: grid;
+  place-items: center;
+  background: rgba(12, 10, 24, 0.4);
+  animation: splash-in 0.3s ease-out both;
+}
+.reveal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: min(980px, 94vw);
+  max-height: 94vh;
+  overflow-y: auto;
+  padding: 6px;
+}
+.reveal-title { margin: 0; font-family: 'Pacifico', cursive; font-weight: 400; font-size: 46px; color: #fff; transform: rotate(-2deg); text-shadow: 0 0 8px #fff, 0 0 26px var(--neon-pink), 0 5px 0 rgba(0, 0, 0, 0.35); }
+.reveal-sub { margin: -6px 0 4px; padding: 4px 14px; border-radius: 999px; background: var(--cream); border: 2px solid var(--ink); font-weight: 600; }
+.reveal-row {
+  width: 100%;
+  border-radius: 18px;
+  background: var(--cream);
+  border: 3px solid var(--ink);
+  border-left: 12px solid var(--chain, var(--ink));
+  box-shadow: 0 6px 0 var(--ink), 0 20px 40px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  animation: reveal-in 0.7s cubic-bezier(.2, 1.2, .3, 1) both;
+}
+.reveal-row header { display: flex; align-items: center; gap: 10px; padding: 6px 12px; background: var(--chain, var(--ink)); color: #fff; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4); }
+.reveal-row header img { width: 34px; height: 34px; border-radius: 50%; background: #fff; }
+.reveal-row header b { font-size: 18px; }
+.reveal-row header .chip-row { margin: 0 0 0 auto; text-shadow: none; color: var(--ink); }
+.reveal-row header .row-tag { background: #fff; color: var(--ink); text-shadow: none; }
+.reveal-row .company { padding: 12px 14px; }
+.reveal-row .company.compact .emp.mini { width: 62px; }
+.reveal-row .company.compact .slot-empty { width: 62px; height: 82px; }
+@keyframes reveal-in {
+  0% { opacity: 0; transform: translateX(-55vw) scale(0.35); }
+  70% { opacity: 1; transform: translateX(10px) scale(1.02); }
+}
 
 /* ---------- Motion ---------- */
 

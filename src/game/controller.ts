@@ -35,12 +35,24 @@ export interface DinnerReport {
   bankBroken: number;
 }
 
+/** Everything a CPU chain did in one turn, shown when its turn ends. */
+export interface TurnRecap {
+  player: PlayerId;
+  round: number;
+  phase: string;
+  items: Spotlight[];
+  milestones: string[];
+  stock: Goods;
+  cash: number;
+}
+
 export interface Note {
-  kind: 'milestone' | 'production' | 'bank' | 'staff' | 'rival';
+  kind: 'milestone' | 'production' | 'bank' | 'staff' | 'rival' | 'turn';
   player: PlayerId;
   title: string;
   detail?: string;
   spot?: Spotlight;
+  recap?: TurnRecap;
 }
 
 export interface Snapshot {
@@ -67,6 +79,7 @@ export class GameController {
   private holdUntil = 0;
   private paused = 0;
   private lastNotable = false;
+  private readonly recaps = new Map<PlayerId, TurnRecap>();
   /** CPU speed multiplier (1, 2, 4). */
   speed = 1;
 
@@ -138,11 +151,30 @@ export class GameController {
     let stats = this.snapshot.stats.map((s) => ({ ...s, produced: { ...s.produced }, hired: [...s.hired], trained: [...s.trained], did: [...s.did] }));
     let report = this.snapshot.report;
 
+    const recapOf = (id: PlayerId) => {
+      let r = this.recaps.get(id);
+      if (!r) this.recaps.set(id, (r = { player: id, round: before.round, phase: before.phase, items: [], milestones: [], stock: state.players[id].stock, cash: 0 }));
+      r.stock = { ...state.players[id].stock };
+      r.cash = state.players[id].cash;
+      return r;
+    };
     const spot = spotlightFor(before, state, player, action);
     this.lastNotable = !!spot && player !== this.human;
     if (spot) {
       stats[player].did.push({ icon: spot.icon, chip: spot.chip, title: spot.title });
-      if (player !== this.human) notes.push({ kind: 'rival', player, title: spot.title, detail: spot.detail, spot });
+      if (player !== this.human) {
+        notes.push({ kind: 'rival', player, title: spot.title, detail: spot.detail, spot });
+        recapOf(player).items.push(spot);
+      }
+    }
+    // Milestones claimed at the structure reveal are shown by the reveal screen.
+    if (before.phase !== 'restructuring') {
+      for (const e of events) if (e.type === 'milestone' && e.player !== this.human) recapOf(e.player).milestones.push(e.milestone);
+    }
+    for (const [id, r] of this.recaps) {
+      if (state.active === id && state.phase === r.phase) continue;
+      this.recaps.delete(id);
+      notes.push({ kind: 'turn', player: id, title: 'Turn summary', recap: r });
     }
 
     if (action.type !== 'endStep' && action.type !== 'chooseReserve') entries.push({ round: before.round, player, text: actionLabel(before, player, action) });
