@@ -138,4 +138,24 @@ describe('random playout', () => {
     expect(s.round).toBeGreaterThan(3);
     for (const p of s.players) expect(p.cash).toBeGreaterThanOrEqual(0);
   }, 60_000);
+
+  it('a step the player just used up is not reported as skipped', () => {
+    const rnd = seededRandom(7);
+    let s = newGame({ seed: 42, chains: CHAINS });
+    let checked = 0;
+    for (let i = 0; i < 4000 && s.phase !== 'game-over' && s.round <= 8; i++) {
+      const actions = legalActions(s);
+      const nonEnd = actions.filter((a) => a.type !== 'endStep' && a.type !== 'pass');
+      const pool = nonEnd.length && rnd() < 0.8 ? nonEnd : actions;
+      const a = pool[Math.floor(rnd() * pool.length)];
+      const before = s;
+      const r = apply(s, s.active!, a);
+      if (before.phase === 'working' && a.type !== 'endStep') {
+        checked++;
+        expect(r.events.some((e) => e.type === 'skipped' && e.player === before.active && e.step === before.workStep)).toBe(false);
+      }
+      s = r.state;
+    }
+    expect(checked).toBeGreaterThan(20);
+  }, 60_000);
 });

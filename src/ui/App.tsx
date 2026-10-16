@@ -172,7 +172,18 @@ export function App({ board }: { board: BoardView }) {
   };
 
   const c = ctrl.current;
-  const canUndo = !!snap?.undo && !sequencing && !moment && !splash;
+  const report =
+    snap?.report && !sequencing && snap.report.round > reportSeen && (snap.report.served.length > 0 || snap.report.waitresses.some((x) => x > 0) || snap.report.bankBroken > 0)
+      ? snap.report
+      : null;
+  const reportOpen = report ? report.round : 0;
+  // The CPUs wait while the dinner report is open, so it is not interrupted by their turns.
+  useEffect(() => {
+    if (!reportOpen || !c) return;
+    c.pause();
+    return () => c.resume();
+  }, [reportOpen, c]);
+  const canUndo = !!snap?.undo && !sequencing && !moment && !splash && !report;
   const undo = () => {
     if (!canUndo || !c?.undo()) return;
     setUndos((n) => n + 1);
@@ -192,10 +203,6 @@ export function App({ board }: { board: BoardView }) {
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
   }, []);
-  const report =
-    snap?.report && !sequencing && snap.report.round > reportSeen && (snap.report.served.length > 0 || snap.report.waitresses.some((x) => x > 0) || snap.report.bankBroken > 0)
-      ? snap.report
-      : null;
   return (
     <div className={`ui ${snap ? 'in-game' : 'in-menu'}`}>
       {snap && c ? (

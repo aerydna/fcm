@@ -13,6 +13,7 @@ import { chainName, empName, reserveLabel, STEP_LABEL, CAMPAIGN_HELP } from './l
 import { GOOD_NAME } from './icons';
 import { reachedHouses } from '../engine/marketing';
 import { RestructureBoard } from './RestructureBoard';
+import { TrainerPips, TrainingBoard } from './TrainingBoard';
 import { CampaignConfirm } from './CampaignConfirm';
 
 type Of<T extends Action['type']> = Extract<Action, { type: T }>;
@@ -33,6 +34,13 @@ export function ActionPanel({ view, me, board, stats, paused, act }: Props) {
   const [error, setError] = useState<string | null>(null);
   const color = CHAINS.find((c) => c.id === view.players[me].chain)?.color;
   const run = (a: Action) => setError(act(a));
+  const runMany = (list: Action[]) => {
+    for (const a of list) {
+      const err = act(a);
+      setError(err);
+      if (err) return;
+    }
+  };
   const pick = (list: Action[], toTarget: (a: Action) => Target['rects'], marks?: (a: Action) => Target['marks'], highlights?: (a: Action) => Rect[], onChoose?: (a: Action) => void) => {
     board.setTargets(
       list.map((a, id) => ({ id, rects: toTarget(a), marks: marks?.(a), highlights: highlights?.(a) })),
@@ -92,7 +100,7 @@ export function ActionPanel({ view, me, board, stats, paused, act }: Props) {
           </Section>
         );
       case 'working':
-        return <Working view={view} me={me} actions={actions} of={of} pick={pick} run={run} board={board} stats={stats} />;
+        return <Working view={view} me={me} actions={actions} of={of} pick={pick} run={run} runMany={runMany} paused={paused} board={board} stats={stats} />;
       case 'payday':
         return <Payday view={view} me={me} actions={actions} run={run} />;
       default:
@@ -201,6 +209,8 @@ interface WorkingProps {
   of: <T extends Action['type']>(t: T) => Of<T>[];
   pick: PickFn;
   run: (a: Action) => void;
+  runMany: (list: Action[]) => void;
+  paused?: boolean;
   board: BoardView;
   stats?: TurnStats;
 }
@@ -213,18 +223,7 @@ function Working(props: WorkingProps) {
     case 0:
       return <Recruit {...props} />;
     case 1:
-      return (
-        <Section title={title} hint="Promote employees on the beach one step along their career.">
-          <div className="list">
-            {of('train').map((a, i) => (
-              <button key={i} className="row" onClick={() => run(a)} data-tip={`${empName(a.to)}: ${EMPLOYEES[a.to].ability}${EMPLOYEES[a.to].salary ? '\nCosts $5 salary every payday.' : ''}`}>
-                {empName(typeOf(p, a.card))} &rarr; <b>{empName(a.to)}</b>
-                <small> by {empName(typeOf(p, a.trainer))}</small>
-              </button>
-            ))}
-          </div>
-        </Section>
-      );
+      return <Training {...props} />;
     case 2:
       return <Marketing {...props} />;
     case 3:
@@ -252,6 +251,21 @@ function Working(props: WorkingProps) {
     default:
       return null;
   }
+}
+
+function Training({ view, me, run, runMany, paused, actions }: WorkingProps) {
+  const p = view.players[me];
+  const [open, setOpen] = useState(true);
+  const end = actions.find((a) => a.type === 'endStep');
+  return (
+    <Section title="Training" hint="Promote employees on the beach along their career. Steps left per trainer:">
+      <TrainerPips p={p} />
+      <button className="cta small" onClick={() => setOpen(true)} data-tip="Open the career trees: see every possible promotion and how many steps it needs.">
+        Open training board
+      </button>
+      {open && !paused && <TrainingBoard view={view} p={p} runMany={runMany} onDone={() => end && run(end)} onHide={() => setOpen(false)} />}
+    </Section>
+  );
 }
 
 function Marketing({ view, me, of, pick, run, board }: WorkingProps) {
@@ -401,7 +415,7 @@ function Payday({ view, me, actions, run }: { view: GameState; me: PlayerId; act
   const pay = actions.find((a) => a.type === 'endPayday');
   const fires = actions.filter((a): a is Of<'fire'> => a.type === 'fire');
   return (
-    <Section title="Payday" hint={`Salaries due: $${due} \u00b7 cash $${p.cash}. Fire employees to save money (click a card).`}>
+    <Section title="Payday" hint={`Salaries due: $${due} \u00b7 cash $${p.cash}. Every salaried card you own is paid, even on the beach or busy marketing. Fire employees to save money (click a card).`}>
       <div className="cards">
         {fires.map((a) => (
           <EmployeeCard key={a.card} type={typeOf(p, a.card)} onClick={() => run(a)} title={`Fire ${empName(typeOf(p, a.card))}: back to the supply${EMPLOYEES[typeOf(p, a.card)].salary ? ', saves $5' : ' (no salary saved)'}.`} badge={'\u2715'} />

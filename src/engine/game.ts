@@ -118,6 +118,8 @@ export function apply(prev: GameState, player: PlayerId, action: Action): { stat
   const state = structuredClone(prev);
   const events: GameEvent[] = [];
   handle(state, state.players[player], action, events);
+  // A step you just used up is finished, not "skipped".
+  if (prev.phase === 'working' && action.type !== 'endStep' && state.workStep === prev.workStep && !stepAvailable(state, state.players[player], state.workStep)) state.workStep++;
   advance(state, events);
   return { state, events };
 }

@@ -1138,6 +1138,68 @@ button { font: inherit; cursor: pointer; border: 0; }
 .confirm-ms { list-style: none; margin: 8px 0 0; padding: 6px 10px; border-radius: 10px; background: #fff1b8; border: 2px solid var(--gold); font-size: 13px; }
 .confirm-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; }
 
+/* ---------- Training board ---------- */
+
+.tr-trainers { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 10px; }
+.tr-trainer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: #fff;
+  border: 2px solid var(--ink);
+  box-shadow: 0 3px 0 var(--ink);
+  font: inherit;
+  font-size: 13px;
+  color: inherit;
+}
+.tr-trainer:not(:disabled) { cursor: pointer; }
+.tr-trainer.on { background: var(--mint); box-shadow: 0 0 0 3px var(--teal), 0 3px 0 var(--ink); }
+.tr-trainer.spent { opacity: 0.5; }
+.tr-trainer .tr-name { font-weight: 700; }
+.tr-pips { display: flex; gap: 3px; }
+.tr-done { margin: 0 0 8px; font-size: 13px; }
+.tr-done .tag { margin-right: 4px; }
+.tr-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; font-size: 12px; }
+.tr-legend .tt-pill { cursor: default; }
+.tr-rows { display: flex; flex-direction: column; gap: 14px; }
+.tr-row { display: flex; align-items: center; gap: 16px; padding: 10px; border-radius: 16px; background: rgba(255, 255, 255, 0.55); border: 2px dashed rgba(43, 29, 40, 0.25); overflow-x: auto; }
+.tr-row > .emp { width: 92px; flex: none; }
+.tt-node { display: flex; align-items: center; gap: 10px; }
+.tt-kids { display: flex; flex-direction: column; gap: 4px; padding-left: 12px; border-left: 3px solid rgba(43, 29, 40, 0.3); }
+.tt-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 150px;
+  padding: 3px 8px 3px 3px;
+  border-radius: 10px;
+  background: #fff;
+  border: 2px solid var(--ink);
+  border-left: 6px solid var(--cat, var(--ink));
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: inherit;
+  white-space: nowrap;
+}
+.tt-pill::before { content: ''; position: absolute; left: -17px; top: 50%; width: 12px; border-top: 3px solid rgba(43, 29, 40, 0.3); }
+.tr-legend .tt-pill::before { display: none; }
+.tt-pill img, .tt-ph { width: 26px; height: 26px; border-radius: 6px; object-fit: cover; flex: none; }
+.tt-ph { display: grid; place-items: center; background: #eee; font-size: 10px; }
+.tt-name { flex: 1; }
+.tt-salary { padding: 0 4px; border-radius: 5px; background: var(--cherry); color: #fff; font-size: 10px; }
+.tt-badge { min-width: 20px; padding: 0 5px; border-radius: 8px; background: var(--ink); color: #fff; font-size: 11px; text-align: center; }
+.tt-pill.ok { box-shadow: 0 0 0 3px var(--gold), 0 3px 0 var(--ink); cursor: pointer; }
+.tt-pill.ok .tt-badge { background: #2a7a3b; }
+.tt-pill.ok:hover { background: var(--mint); transform: translateY(-1px); }
+.tt-pill.later { opacity: 0.5; border-style: dashed; }
+.tt-pill.later .tt-badge { background: #777; }
+.tt-pill.blocked { opacity: 0.45; filter: grayscale(0.7); }
+.tt-pill.blocked .tt-badge { background: var(--cherry); }
+
 /* ---------- Motion ---------- */
 
 @keyframes spin { to { transform: rotate(360deg); } }
